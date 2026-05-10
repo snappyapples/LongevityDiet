@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import type { FoodItem, LongevityReport, Meal, MealType } from '@/types'
 import { buildLongevityReport } from '@/lib/longevity-score'
+import { parseWithCache } from '@/lib/parse-cache'
 import { CategoryChips } from './CategoryChips'
 
 const COMPONENT_LABELS: Record<keyof LongevityReport['componentsRolling'], string> = {
@@ -112,19 +113,13 @@ export function QuickLogInput({ meals, onSave }: QuickLogInputProps) {
 
   const handleParse = async (withIntent: Intent) => {
     if (!input.trim() || parsing) return
-    setParsing(true)
     setError(null)
     setIntent(withIntent)
+    setParsing(true)
     try {
-      const res = await fetch('/api/parse-meal', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: input }),
-      })
-      if (!res.ok) throw new Error('Failed to parse')
-      const data = await res.json()
-      if (data.items?.length) {
-        setItems(data.items)
+      const items = await parseWithCache(input)
+      if (items.length > 0) {
+        setItems(items)
         setStage('parsed')
       } else {
         setError('Could not parse that. Try more detail.')

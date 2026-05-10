@@ -13,6 +13,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
 import { FoodItem, MealType, MealContext, Meal } from '@/types'
 import { CategoryChips } from '@/components/dashboard/CategoryChips'
+import { parseWithCache } from '@/lib/parse-cache'
 
 const mealLabels: Record<MealType, string> = {
   breakfast: 'Breakfast',
@@ -203,14 +204,9 @@ export function LogMealSheet({ open, onOpenChange, mealType, editingMeal, onSave
     if (!input.trim()) return
     setParsing(true)
     try {
-      const res = await fetch('/api/parse-meal', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: input }),
-      })
-      const data = await res.json()
-      if (data.items) {
-        setItems(prev => [...prev, ...data.items])
+      const parsed = await parseWithCache(input)
+      if (parsed.length > 0) {
+        setItems(prev => [...prev, ...parsed])
         setInput('')
       }
     } catch (err) {
