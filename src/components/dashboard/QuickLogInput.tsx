@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo, useRef, useEffect } from 'react'
-import { Loader2, Sparkles, Utensils, Eye, Check, X, ChevronDown } from 'lucide-react'
+import { Loader2, Sparkles, Utensils, Eye, Check, X, ChevronDown, Plus } from 'lucide-react'
 import { format } from 'date-fns'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -46,6 +46,8 @@ const MEAL_LABELS: Record<MealType, string> = {
   indulgence: 'Indulgence',
 }
 
+const FREQUENT_LIMIT = 12
+
 function defaultMealType(now: Date = new Date()): MealType {
   const h = now.getHours() + now.getMinutes() / 60
   if (h >= 4 && h < 10.5) return 'breakfast'
@@ -54,8 +56,45 @@ function defaultMealType(now: Date = new Date()): MealType {
   return 'snack'
 }
 
+function generateId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+  return `cli_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`
+}
+
+/**
+ * Top N most-frequently-logged items by name across all the meals we've fetched
+ * (~30 days). Ties broken by recency. Skips legacy un-classified items so we
+ * don't surface chip-less mystery rows.
+ */
+function deriveFrequentFoods(meals: Meal[]): FoodItem[] {
+  const byName: Record<string, { item: FoodItem; count: number; lastSeen: number }> = {}
+  for (const m of meals) {
+    const ts = m.createdAt ? new Date(m.createdAt).getTime() : 0
+    for (const item of m.items || []) {
+      const key = (item.name || '').trim().toLowerCase()
+      if (!key) continue
+      // Skip pre-backfill legacy items (no classification info)
+      if (item.categories === undefined) continue
+      if (!byName[key]) {
+        byName[key] = { item, count: 1, lastSeen: ts }
+      } else {
+        byName[key].count++
+        if (ts >= byName[key].lastSeen) {
+          byName[key].lastSeen = ts
+          byName[key].item = item
+        }
+      }
+    }
+  }
+  return Object.values(byName)
+    .sort((a, b) => b.count - a.count || b.lastSeen - a.lastSeen)
+    .slice(0, FREQUENT_LIMIT)
+    .map(({ item }) => item)
+}
+
 type Stage = 'idle' | 'parsed'
-type Intent = 'log' | 'evaluate'
 
 interface QuickLogInputProps {
   meals: Meal[]
@@ -65,14 +104,16 @@ interface QuickLogInputProps {
 export function QuickLogInput({ meals, onSave }: QuickLogInputProps) {
   const [input, setInput] = useState('')
   const [mealType, setMealType] = useState<MealType>(() => defaultMealType())
+  const [stagedItems, setStagedItems] = useState<FoodItem[]>([])
   const [items, setItems] = useState<FoodItem[]>([])
   const [parsing, setParsing] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const [intent, setIntent] = useState<Intent | null>(null)
   const [stage, setStage] = useState<Stage>('idle')
+  const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [typeMenuOpen, setTypeMenuOpen] = useState(false)
+  const [toast, setToast] = useState<{ msg: string; kind: 'progress' | 'success' | 'error' } | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const today = format(new Date(), 'yyyy-MM-dd')
 
@@ -86,6 +127,22 @@ export function QuickLogInput({ meals, onSave }: QuickLogInputProps) {
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
   }, [typeMenuOpen])
+
+  // Cleanup toast timer on unmount
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
+    }
+  }, [])
+
+  const frequentFoods = useMemo(() => deriveFrequentFoods(meals), [meals])
+  const stagedNames = useMemo(
+    () => new Set(stagedItems.map((s) => s.name.trim().toLowerCase())),
+    [stagedItems],
+  )
+  const visibleFrequent = frequentFoods.filter(
+    (f) => !stagedNames.has(f.name.trim().toLowerCase()),
+  )
 
   const preview = useMemo(() => {
     if (stage !== 'parsed' || items.length === 0) return null
@@ -111,43 +168,124 @@ export function QuickLogInput({ meals, onSave }: QuickLogInputProps) {
     }
   }, [stage, items, meals, today, mealType])
 
-  const handleParse = async (withIntent: Intent) => {
-    if (!input.trim() || parsing) return
+  const showToast = (msg: string, kind: 'progress' | 'success' | 'error', durationMs = 2500) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
+    setToast({ msg, kind })
+    if (kind !== 'progress') {
+      toastTimerRef.current = setTimeout(() => setToast(null), durationMs)
+    }
+  }
+
+  const addStaged = (food: FoodItem) => {
+    setStagedItems((prev) => [...prev, { ...food, id: generateId() }])
+  }
+
+  const removeStaged = (id: string) => {
+    setStagedItems((prev) => prev.filter((i) => i.id !== id))
+  }
+
+  // FAST PATH — fire and forget. Parse (if text) and save in the background.
+  // UI clears immediately so the user can walk away.
+  const handleLogIt = () => {
+    const text = input.trim()
+    if (!text && stagedItems.length === 0) return
+
     setError(null)
-    setIntent(withIntent)
-    setParsing(true)
-    try {
-      const items = await parseWithCache(input)
-      if (items.length > 0) {
-        setItems(items)
-        setStage('parsed')
-      } else {
-        setError('Could not parse that. Try more detail.')
+
+    // Capture state for the background closure before resetting.
+    const capturedStaged = stagedItems
+    const capturedMealType = mealType
+    const capturedDate = today
+
+    // Reset visible UI right away.
+    setInput('')
+    setStagedItems([])
+    setMealType(defaultMealType())
+    setStage('idle')
+
+    showToast('Logging…', 'progress')
+
+    void (async () => {
+      let parsedFromText: FoodItem[] = []
+      if (text) {
+        try {
+          parsedFromText = await parseWithCache(text)
+        } catch (err) {
+          console.error('Parse failed:', err)
+          showToast('Parse failed — please try again', 'error', 3500)
+          return
+        }
       }
-    } catch (err) {
-      console.error(err)
-      setError('Parse failed. Please try again.')
-    } finally {
+
+      const allItems = [...capturedStaged, ...parsedFromText]
+      if (allItems.length === 0) {
+        showToast('Nothing to log', 'error', 3000)
+        return
+      }
+
+      try {
+        await onSave(capturedMealType, capturedDate, allItems)
+        showToast(
+          `Logged ${allItems.length} item${allItems.length === 1 ? '' : 's'} ✓`,
+          'success',
+        )
+      } catch (err) {
+        console.error('Save failed:', err)
+        showToast('Save failed — please try again', 'error', 3500)
+      }
+    })()
+  }
+
+  // SLOW PATH — Evaluate. Parse foreground, show review with score preview.
+  const handleEvaluate = async () => {
+    if (parsing) return
+    const text = input.trim()
+    if (!text && stagedItems.length === 0) return
+
+    setError(null)
+
+    let parsedFromText: FoodItem[] = []
+    if (text) {
+      setParsing(true)
+      try {
+        parsedFromText = await parseWithCache(text)
+      } catch (err) {
+        console.error(err)
+        setError('Parse failed. Please try again.')
+        setParsing(false)
+        return
+      }
       setParsing(false)
     }
+
+    const all = [...stagedItems, ...parsedFromText]
+    if (all.length === 0) {
+      setError('Could not parse that. Try more detail.')
+      return
+    }
+    setItems(all)
+    setStage('parsed')
   }
 
   const resetAll = () => {
     setInput('')
     setItems([])
+    setStagedItems([])
     setStage('idle')
-    setIntent(null)
     setError(null)
     setMealType(defaultMealType())
   }
 
-  const handleSave = async () => {
+  // Save from the Evaluate review screen.
+  const handleSaveFromReview = async () => {
     if (saving || items.length === 0) return
     setSaving(true)
     setError(null)
     try {
       await onSave(mealType, today, items)
+      const count = items.length
       resetAll()
+      showToast(`Logged ${count} item${count === 1 ? '' : 's'} ✓`, 'success')
     } catch (err) {
       console.error(err)
       setError('Failed to save. Try again.')
@@ -156,17 +294,17 @@ export function QuickLogInput({ meals, onSave }: QuickLogInputProps) {
     }
   }
 
+  // ---- Review (Evaluate) stage ----
   if (stage === 'parsed') {
-    const isEval = intent === 'evaluate'
     return (
       <Card className="mb-4 p-4">
         <div className="flex items-start justify-between mb-3">
           <div>
             <div className="text-sm font-semibold">
-              {isEval ? 'Previewing' : 'Logging'} · {MEAL_LABELS[mealType]}
+              Previewing · {MEAL_LABELS[mealType]}
             </div>
             <div className="text-sm text-muted-foreground mt-0.5">
-              {isEval ? 'Not saved yet — review the impact below' : 'Review before saving'}
+              Not saved yet — review the impact below
             </div>
           </div>
           <button
@@ -227,21 +365,24 @@ export function QuickLogInput({ meals, onSave }: QuickLogInputProps) {
         {error && <div className="mb-2 text-sm text-destructive">{error}</div>}
 
         <div className="flex gap-2">
-          <Button onClick={handleSave} disabled={saving} className="flex-1 h-11 text-base">
+          <Button onClick={handleSaveFromReview} disabled={saving} className="flex-1 h-11 text-base">
             {saving ? (
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
             ) : (
               <Check className="w-4 h-4 mr-2" />
             )}
-            {isEval ? 'Looks good, save' : 'Save'}
+            Looks good, save
           </Button>
           <Button onClick={resetAll} disabled={saving} variant="outline" className="h-11 text-base">
-            {isEval ? 'Skip' : 'Cancel'}
+            Skip
           </Button>
         </div>
       </Card>
     )
   }
+
+  // ---- Idle stage ----
+  const canSubmit = (input.trim().length > 0 || stagedItems.length > 0) && !parsing
 
   return (
     <Card className="mb-4 p-4">
@@ -279,36 +420,92 @@ export function QuickLogInput({ meals, onSave }: QuickLogInputProps) {
         </div>
       </div>
 
+      {toast && (
+        <div
+          className={`mb-3 px-3 py-2 rounded-md text-sm font-medium flex items-center gap-2 ${
+            toast.kind === 'success'
+              ? 'bg-quality-green/10 text-quality-green'
+              : toast.kind === 'error'
+              ? 'bg-destructive/10 text-destructive'
+              : 'bg-primary/10 text-primary'
+          }`}
+        >
+          {toast.kind === 'progress' && <Loader2 className="w-4 h-4 animate-spin" />}
+          {toast.msg}
+        </div>
+      )}
+
       <Textarea
         placeholder="e.g., 2 eggs, oatmeal with berries, coffee"
         value={input}
         onChange={(e) => setInput(e.target.value)}
         disabled={parsing}
-        className="min-h-[70px] text-base mb-2"
+        className="min-h-[70px] text-base mb-3"
       />
+
+      {visibleFrequent.length > 0 && (
+        <div className="mb-3">
+          <div className="text-xs font-medium text-muted-foreground mb-1.5 uppercase tracking-wide">
+            Quick add from your usuals
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {visibleFrequent.map((food, i) => (
+              <button
+                key={`${food.name}-${i}`}
+                onClick={() => addStaged(food)}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-secondary hover:bg-primary/10 hover:text-primary text-foreground text-sm font-medium transition-colors"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                {food.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {stagedItems.length > 0 && (
+        <div className="mb-3 p-2.5 rounded-md bg-primary/5 border border-primary/10">
+          <div className="text-xs font-medium text-muted-foreground mb-1.5 uppercase tracking-wide">
+            Ready to log ({stagedItems.length})
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {stagedItems.map((item) => (
+              <span
+                key={item.id}
+                className="inline-flex items-center gap-1 pl-2.5 pr-1 py-1 rounded-full bg-primary/15 text-primary text-sm font-medium"
+              >
+                {item.name}
+                <button
+                  onClick={() => removeStaged(item.id)}
+                  className="ml-0.5 p-0.5 rounded-full hover:bg-primary/20"
+                  aria-label={`Remove ${item.name}`}
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
 
       {error && <div className="mb-2 text-sm text-destructive">{error}</div>}
 
       <div className="grid grid-cols-2 gap-2">
         <Button
-          onClick={() => handleParse('log')}
-          disabled={!input.trim() || parsing}
+          onClick={handleLogIt}
+          disabled={!canSubmit}
           className="h-11 text-base"
         >
-          {parsing && intent === 'log' ? (
-            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-          ) : (
-            <Utensils className="w-4 h-4 mr-2" />
-          )}
+          <Utensils className="w-4 h-4 mr-2" />
           Log it
         </Button>
         <Button
-          onClick={() => handleParse('evaluate')}
-          disabled={!input.trim() || parsing}
+          onClick={handleEvaluate}
+          disabled={!canSubmit}
           variant="outline"
           className="h-11 text-base"
         >
-          {parsing && intent === 'evaluate' ? (
+          {parsing ? (
             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
           ) : (
             <Eye className="w-4 h-4 mr-2" />

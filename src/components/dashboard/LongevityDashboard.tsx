@@ -81,8 +81,9 @@ export function LongevityDashboard() {
     try {
       setError(null)
       const today = format(new Date(), 'yyyy-MM-dd')
-      // Fetch 14 days so we can compute current vs prior 7-day delta
-      const res = await fetch(`/api/meals?days=14&today=${today}`)
+      // Fetch 30 days. Last 14 power the score (current 7 + prior 7); the
+      // additional history feeds the QuickLogInput's frequent-foods pills.
+      const res = await fetch(`/api/meals?days=30&today=${today}`)
       if (!res.ok) throw new Error('Failed to fetch meals')
       const data = await res.json()
       const allDays: DayData[] = data.days || []
