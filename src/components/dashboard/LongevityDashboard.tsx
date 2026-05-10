@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { isToday, format } from 'date-fns'
+import { useState, useEffect, useCallback, useMemo } from 'react'
+import { isToday, format, subDays } from 'date-fns'
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { FloatingAddButton } from '../FloatingAddButton'
@@ -11,7 +11,7 @@ import { LongevityDayCard } from './LongevityDayCard'
 import { LongevityHelpSheet } from './LongevityHelpSheet'
 import { LongevityComponentList } from './LongevityComponentList'
 import { QuickLogInput } from './QuickLogInput'
-import type { DayData, FoodItem, LongevityReport, Meal, MealContext, MealType } from '@/types'
+import type { DayData, FoodItem, Meal, MealContext, MealType } from '@/types'
 import { buildLongevityReport } from '@/lib/longevity-score'
 import { cn } from '@/lib/utils'
 
@@ -35,10 +35,41 @@ function DeltaBadge({ delta }: { delta: number | null }) {
   )
 }
 
+function buildDays(meals: Meal[], today: Date, numDays: number): DayData[] {
+  const out: DayData[] = []
+  for (let i = 0; i < numDays; i++) {
+    const dateStr = format(subDays(today, i), 'yyyy-MM-dd')
+    const dayMeals = meals.filter((m) => m.date === dateStr)
+    const totalCalories = dayMeals.reduce((s, m) => s + (m.totalCalories ?? 0), 0)
+    const totalProtein = dayMeals.reduce((s, m) => s + (m.totalProtein ?? 0), 0)
+    const totalFiber = dayMeals.reduce((s, m) => s + (m.totalFiber ?? 0), 0)
+    out.push({
+      date: dateStr,
+      meals: dayMeals,
+      totalCalories,
+      totalProtein,
+      totalFiber,
+      proteinPerCalorie: totalCalories > 0 ? totalProtein / totalCalories : 0,
+      fiberPerCalorie: totalCalories > 0 ? totalFiber / totalCalories : 0,
+    })
+  }
+  return out
+}
+
+function makeTempId(): string {
+  return `temp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+}
+
+function totalsFromItems(items: FoodItem[]) {
+  return {
+    totalCalories: items.reduce((s, i) => s + (i.calories ?? 0), 0),
+    totalProtein: items.reduce((s, i) => s + (i.protein ?? 0), 0),
+    totalFiber: items.reduce((s, i) => s + (i.fiber ?? 0), 0),
+  }
+}
+
 export function LongevityDashboard() {
-  const [days, setDays] = useState<DayData[]>([])
   const [allMeals, setAllMeals] = useState<Meal[]>([])
-  const [report, setReport] = useState<LongevityReport | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
@@ -50,15 +81,13 @@ export function LongevityDashboard() {
     try {
       setError(null)
       const today = format(new Date(), 'yyyy-MM-dd')
-      // Fetch 14 days so we can compute this-week vs last-week delta
+      // Fetch 14 days so we can compute current vs prior 7-day delta
       const res = await fetch(`/api/meals?days=14&today=${today}`)
       if (!res.ok) throw new Error('Failed to fetch meals')
       const data = await res.json()
       const allDays: DayData[] = data.days || []
       const flattened: Meal[] = allDays.flatMap((d) => d.meals)
       setAllMeals(flattened)
-      setDays(allDays.slice(0, 7))
-      setReport(buildLongevityReport(flattened, new Date()))
     } catch (err) {
       console.error('Failed to fetch longevity data:', err)
       setError('Failed to load data. Please try again.')
@@ -70,6 +99,15 @@ export function LongevityDashboard() {
   useEffect(() => {
     fetchData()
   }, [fetchData])
+
+  // Derive everything else from allMeals — no separate state required.
+  // Re-runs only when meals change (optimistic add/update/delete or initial fetch).
+  const report = useMemo(() => buildLongevityReport(allMeals, new Date()), [allMeals])
+  const days = useMemo(() => buildDays(allMeals, new Date(), 7), [allMeals])
+  const scoresByDate = useMemo(
+    () => new Map(report.dailyScores.map((s) => [s.date, s])),
+    [report],
+  )
 
   const handleLogMeal = (type: MealType, date: string) => {
     setEditingMeal(null)
@@ -84,66 +122,145 @@ export function LongevityDashboard() {
     setSheetOpen(true)
   }
 
-  const handleDeleteMeal = async (mealId: string) => {
-    try {
-      setError(null)
-      const res = await fetch(`/api/meals?id=${mealId}`, { method: 'DELETE' })
-      if (!res.ok) throw new Error('Failed to delete meal')
-      await fetchData()
-    } catch (err) {
-      console.error('Failed to delete meal:', err)
-      setError('Failed to delete meal. Please try again.')
+  // Optimistic delete: remove locally, fire DELETE in background, restore on failure.
+  const handleDeleteMeal = (mealId: string) => {
+    setError(null)
+    const removed = allMeals.find((m) => m.id === mealId)
+    if (!removed) return
+    setAllMeals((prev) => prev.filter((m) => m.id !== mealId))
+    void (async () => {
+      try {
+        const res = await fetch(`/api/meals?id=${mealId}`, { method: 'DELETE' })
+        if (!res.ok) throw new Error('Failed to delete meal')
+      } catch (err) {
+        console.error('Failed to delete meal:', err)
+        // Restore the meal
+        setAllMeals((prev) => [...prev, removed])
+        setError('Failed to delete meal. Please try again.')
+      }
+    })()
+  }
+
+  // Optimistic create or update from the LogMealSheet.
+  const handleSaveMeal = async (items: FoodItem[], context: MealContext) => {
+    if (!selectedMealType) return
+    setError(null)
+
+    if (editingMeal) {
+      // Optimistic update — replace in place.
+      const totals = totalsFromItems(items)
+      const updated: Meal = {
+        ...editingMeal,
+        type: selectedMealType,
+        items,
+        context,
+        ...totals,
+      }
+      const previous = editingMeal
+      setAllMeals((prev) => prev.map((m) => (m.id === editingMeal.id ? updated : m)))
+      setEditingMeal(null)
+      void (async () => {
+        try {
+          const res = await fetch('/api/meals', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              id: editingMeal.id,
+              type: selectedMealType,
+              date: editingMeal.date,
+              items,
+              context,
+            }),
+          })
+          if (!res.ok) throw new Error('Failed to update meal')
+          const data = await res.json()
+          if (data?.meal) {
+            setAllMeals((prev) =>
+              prev.map((m) => (m.id === editingMeal.id ? (data.meal as Meal) : m)),
+            )
+          }
+        } catch (err) {
+          console.error('Failed to update meal:', err)
+          // Roll back to previous
+          setAllMeals((prev) => prev.map((m) => (m.id === previous.id ? previous : m)))
+          setError('Failed to update meal. Please try again.')
+        }
+      })()
+    } else {
+      // Optimistic create — add with temp id, swap to server-returned meal on success.
+      const mealDate = selectedDate || format(new Date(), 'yyyy-MM-dd')
+      const tempId = makeTempId()
+      const totals = totalsFromItems(items)
+      const optimistic: Meal = {
+        id: tempId,
+        type: selectedMealType,
+        date: mealDate,
+        items,
+        context,
+        ...totals,
+        createdAt: new Date().toISOString(),
+      }
+      setAllMeals((prev) => [...prev, optimistic])
+      void (async () => {
+        try {
+          const res = await fetch('/api/meals', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: selectedMealType,
+              date: mealDate,
+              items,
+              context,
+            }),
+          })
+          if (!res.ok) throw new Error('Failed to save meal')
+          const data = await res.json()
+          if (data?.meal) {
+            setAllMeals((prev) => prev.map((m) => (m.id === tempId ? (data.meal as Meal) : m)))
+          }
+        } catch (err) {
+          console.error('Failed to save meal:', err)
+          // Remove the optimistic meal
+          setAllMeals((prev) => prev.filter((m) => m.id !== tempId))
+          setError('Failed to save meal. Please try again.')
+        }
+      })()
     }
   }
 
-  const handleSaveMeal = async (items: FoodItem[], context: MealContext) => {
-    if (!selectedMealType) return
-    try {
-      setError(null)
-      if (editingMeal) {
-        const res = await fetch('/api/meals', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            id: editingMeal.id,
-            type: selectedMealType,
-            date: editingMeal.date,
-            items,
-            context,
-          }),
-        })
-        if (!res.ok) throw new Error('Failed to update meal')
-      } else {
-        const mealDate = selectedDate || format(new Date(), 'yyyy-MM-dd')
+  // Optimistic create from QuickLogInput (no edit path here).
+  const handleQuickSave = async (type: MealType, date: string, items: FoodItem[]) => {
+    setError(null)
+    const tempId = makeTempId()
+    const totals = totalsFromItems(items)
+    const optimistic: Meal = {
+      id: tempId,
+      type,
+      date,
+      items,
+      context: {},
+      ...totals,
+      createdAt: new Date().toISOString(),
+    }
+    setAllMeals((prev) => [...prev, optimistic])
+    void (async () => {
+      try {
         const res = await fetch('/api/meals', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            type: selectedMealType,
-            date: mealDate,
-            items,
-            context,
-          }),
+          body: JSON.stringify({ type, date, items, context: {} }),
         })
         if (!res.ok) throw new Error('Failed to save meal')
+        const data = await res.json()
+        if (data?.meal) {
+          setAllMeals((prev) => prev.map((m) => (m.id === tempId ? (data.meal as Meal) : m)))
+        }
+      } catch (err) {
+        console.error('Failed to save meal:', err)
+        setAllMeals((prev) => prev.filter((m) => m.id !== tempId))
+        setError('Failed to save meal. Please try again.')
       }
-      setEditingMeal(null)
-      await fetchData()
-    } catch (err) {
-      console.error('Failed to save meal:', err)
-      setError('Failed to save meal. Please try again.')
-    }
-  }
-
-  const handleQuickSave = async (type: MealType, date: string, items: FoodItem[]) => {
-    setError(null)
-    const res = await fetch('/api/meals', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type, date, items, context: {} }),
-    })
-    if (!res.ok) throw new Error('Failed to save meal')
-    await fetchData()
+    })()
   }
 
   const handleSheetClose = (open: boolean) => {
@@ -165,9 +282,6 @@ export function LongevityDashboard() {
     )
   }
 
-  // Map scored days by date for quick lookup in day card rendering
-  const scoresByDate = new Map(report?.dailyScores.map((s) => [s.date, s]) ?? [])
-
   return (
     <>
       {error && (
@@ -182,34 +296,32 @@ export function LongevityDashboard() {
         </div>
       )}
 
-      {report && (
-        <Card className="mb-4 p-5">
-          <div className="flex items-center gap-5">
-            <LongevityScoreRing
-              score={report.rollingScore}
-              hasData={report.rollingHasData}
-              size={140}
-              strokeWidth={12}
-            />
-            <div className="flex-1 space-y-2">
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <div className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
-                    Longevity Score
-                  </div>
-                  <div className="text-sm text-muted-foreground mt-1">
-                    Rolling 7-day window
-                  </div>
+      <Card className="mb-4 p-5">
+        <div className="flex items-center gap-5">
+          <LongevityScoreRing
+            score={report.rollingScore}
+            hasData={report.rollingHasData}
+            size={140}
+            strokeWidth={12}
+          />
+          <div className="flex-1 space-y-2">
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <div className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
+                  Longevity Score
                 </div>
-                <LongevityHelpSheet />
+                <div className="text-sm text-muted-foreground mt-1">
+                  Rolling 7-day window
+                </div>
               </div>
-              <DeltaBadge delta={report.weeklyDelta} />
+              <LongevityHelpSheet />
             </div>
+            <DeltaBadge delta={report.weeklyDelta} />
           </div>
+        </div>
 
-          <LongevityComponentList report={report} />
-        </Card>
-      )}
+        <LongevityComponentList report={report} />
+      </Card>
 
       <QuickLogInput meals={allMeals} onSave={handleQuickSave} />
 
