@@ -11,7 +11,7 @@ import type { FoodItem } from '@/types'
  * Bump CACHE_KEY when the parse prompt changes meaningfully — old cached
  * classifications become stale.
  */
-const CACHE_KEY = 'fitnesslove.parseCache.v2'  // bump to invalidate after prompt changes
+const CACHE_KEY = 'fitnesslove.parseCache.v3'  // bump to invalidate after prompt changes
 const TTL_MS = 30 * 24 * 60 * 60 * 1000        // 30 days
 const MAX_ENTRIES = 100
 

@@ -19,14 +19,13 @@ export const PARSE_MEAL_PROMPT = `You are a nutrition and longevity-scoring expe
 For each ingredient, return:
 - name (string)
 - calories (number)
-- protein (grams, number)
-- fiber (grams, number)
-- quantity (optional portion size string)
-- categories: array of applicable longevity categories (see list below)
-- servings: an object mapping each applicable category to number of AHEI-style servings
-- processingLevel: one of "whole", "minimal", "processed", "ultra_processed"
+- protein (grams)
+- fiber (grams)
+- quantity (portion size string, or null)
+- categories: array of applicable longevity categories (sparse — only ones that apply)
+- servings: array of {category, amount} entries, one per applicable category (sparse — omit categories that don't apply)
 
-DECOMPOSITION RULE (critical): Composite meals — salads, bowls, sandwiches, wraps, plates, platters, stir-fries, burritos, casseroles — MUST be decomposed into constituent ingredients, one item per ingredient. A single meal description often produces 3–6 items. DO NOT collapse a composite dish into one neutral item; that erases the scoring signal (the whole point of scoring is component-level accuracy).
+DECOMPOSITION RULE (critical): Composite meals — salads, bowls, sandwiches, wraps, plates, platters, stir-fries, burritos, casseroles — MUST be decomposed into constituent ingredients, one item per ingredient. A single meal description often produces 3–6 items. DO NOT collapse a composite dish into one neutral item; that erases the scoring signal.
 
 When the user names a well-known composite (e.g. "Costco rotisserie chicken salad", "chicken burrito bowl", "Cobb salad"), infer the typical ingredients and portions. The user can edit individual items after parsing, so make reasonable assumptions rather than returning a single less-accurate item.
 
@@ -40,60 +39,61 @@ Example — "rotisserie chicken Costco green salad" decomposes into roughly:
 
 When the description truly IS a single homogeneous item ("an apple", "bowl of oatmeal", "2 eggs", "a handful of walnuts"), return one item. Use judgment — "oatmeal with berries" is a simple topping and can stay as one item with [whole_grain, fruit] categories; "oatmeal with berries, walnuts, and yogurt" has enough distinguishable components to decompose.
 
-DRESSINGS, SAUCES, CONDIMENTS: When a composite dish is decomposed, always include its dressing/sauce as a separate item. Commercial sweetened/creamy/emulsified dressings and sauces (ranch, Caesar, thousand island, bottled sweet vinaigrettes, BBQ, teriyaki, sweet-and-sour, mayo-based sauces, ketchup) default to ultra_processed. Pure olive oil or oil-and-vinegar is healthy_fat (EVOO) or minimal. If the user doesn't specify which dressing on a restaurant/store salad, assume a commercial bottled one (ultra_processed).
+DRESSINGS, SAUCES, CONDIMENTS: When a composite dish is decomposed, always include its dressing/sauce as a separate item. Commercial sweetened/creamy/emulsified dressings and sauces (ranch, Caesar, thousand island, bottled sweet vinaigrettes, BBQ, teriyaki, sweet-and-sour, mayo-based sauces, ketchup) → categories: ["ultra_processed"]. Pure olive oil or oil-and-vinegar → categories: ["healthy_fat"]. If the user doesn't specify which dressing on a restaurant/store salad, assume a commercial bottled one (ultra_processed).
 
-EXCEPTIONS (NOT ultra_processed — these are NOVA-3 "processed" foods, not NOVA-4 "ultra-processed"): salsa, pico de gallo, hot sauce, simple marinara, guacamole, hummus, and plain yogurt-based dips. They have short, recognizable ingredient lists (mostly whole-food components) and no added sugar/emulsifiers/stabilizers. Classify them by their dominant ingredient:
-- Salsa, pico de gallo, hot sauce, simple marinara → categories: ["vegetable"], processingLevel: "processed"
-- Guacamole → categories: ["healthy_fat"], processingLevel: "minimal"
-- Hummus → categories: ["legume_soy"], processingLevel: "minimal"
-- Plain Greek yogurt dip (no added sugar) → categories: [], processingLevel: "minimal"
+EXCEPTIONS (NOT ultra_processed — these are NOVA-3 "processed" foods, not NOVA-4 "ultra-processed"): salsa, pico de gallo, hot sauce, simple marinara, guacamole, hummus, plain yogurt-based dips. Short, recognizable ingredient lists, mostly whole-food components, no added sugar/emulsifiers/stabilizers:
+- Salsa, pico de gallo, hot sauce, simple marinara → categories: ["vegetable"]
+- Guacamole → categories: ["healthy_fat"]
+- Hummus → categories: ["legume_soy"]
+- Plain Greek yogurt dip (no added sugar) → categories: []
 
 CATEGORY DEFINITIONS (an ingredient can belong to multiple — e.g. walnuts hit nut_seed + healthy_fat; salmon hits fish_omega3 + healthy_fat):
-- "vegetable": any non-starchy vegetable (broccoli, spinach, peppers, tomato, cucumber, zucchini, etc.). Potatoes are NOT a vegetable in AHEI scoring.
-- "leafy_crucifer": leafy greens (spinach, kale, arugula, romaine) or crucifers (broccoli, cauliflower, cabbage, brussels sprouts). If this applies, ALSO include "vegetable".
+- "vegetable": any non-starchy vegetable (broccoli, spinach, peppers, tomato, cucumber, zucchini, etc.). Potatoes do NOT qualify.
+- "leafy_crucifer": leafy greens (spinach, kale, arugula, romaine) or crucifers (broccoli, cauliflower, cabbage, brussels sprouts). ALSO include "vegetable" when this applies.
 - "fruit": whole fruit (berries, apple, banana, orange, melon). Fruit juice is NOT fruit — it's a "sugary_drink".
 - "legume_soy": beans, lentils, chickpeas, peas, tofu, tempeh, edamame, soy milk.
-- "whole_grain": oatmeal, brown rice, quinoa, whole wheat, barley, farro, bulgur, 100% whole-grain bread/pasta. Refined grains (white rice, white bread, white pasta) do NOT qualify.
+- "whole_grain": oatmeal, brown rice, quinoa, whole wheat, barley, farro, bulgur, 100% whole-grain bread/pasta. Refined grains do NOT qualify.
 - "nut_seed": nuts (almonds, walnuts, pistachios, pecans, cashews) and seeds (chia, flax, pumpkin, sunflower). Nut butters count.
-- "healthy_fat": extra virgin olive oil, avocado, olives, fatty fish (salmon, sardines), nuts/seeds. Butter, coconut oil, industrial seed oils, and margarine do NOT qualify.
+- "healthy_fat": EVOO, avocado, olives, fatty fish, nuts/seeds. Butter, coconut oil, industrial seed oils, margarine do NOT qualify.
 - "fish_omega3": fatty fish (salmon, sardines, trout, herring, mackerel, anchovies). Lean white fish (tilapia, cod) does NOT qualify.
-- "red_meat": unprocessed BEEF, PORK, LAMB, BISON, VENISON, GOAT only. POULTRY IS NOT RED MEAT — chicken, turkey, duck, and goose belong to NO positive category in this scoring system (they are neutral, not counted). Meatballs/meatloaf default to red_meat UNLESS the name specifies poultry ("turkey meatballs", "chicken meatballs") in which case they are NOT red_meat.
-- "processed_meat": bacon, sausage, hot dog, deli/lunch meat, salami, pepperoni, ham, jerky, cured meats. Chicken sausage and turkey bacon still count as processed_meat.
+- "red_meat": unprocessed BEEF, PORK, LAMB, BISON, VENISON, GOAT only. POULTRY IS NOT RED MEAT — chicken, turkey, duck, goose belong to NO positive category (they are neutral). Meatballs/meatloaf default to red_meat UNLESS the name specifies poultry ("turkey meatballs", "chicken meatballs").
+- "processed_meat": bacon, sausage, hot dog, deli/lunch meat, salami, pepperoni, ham, jerky, cured meats. Chicken sausage and turkey bacon still count.
 - "sugary_drink": soda, sweetened coffee drinks, sports drinks, energy drinks, fruit juice, lemonade, sweet tea.
-- "ultra_processed": NOVA group 4 — chips, candy, cookies, packaged snack bars, most fast food, frozen ready meals, sweetened cereals, instant noodles, processed cheese, sodas. IMPORTANT: restaurant/takeout dishes that are BREADED AND FRIED (orange chicken, sesame chicken, general tso's, chicken nuggets, chicken tenders, popcorn chicken, tempura, fried fish sandwich, mozzarella sticks) ARE ultra_processed. Dishes with SWEETENED/SUGARY sauces as a primary flavor (orange chicken, sweet & sour, teriyaki glaze, BBQ sauce pulled-pork) ARE ultra_processed. White rice that accompanies these dishes is still just white rice (processed, not ultra_processed) — score each named item on its own merits.
+- "ultra_processed": NOVA group 4 — chips, candy, cookies, packaged snack bars, most fast food, frozen ready meals, sweetened cereals, instant noodles, processed cheese, sodas. Breaded AND fried takeout dishes (orange chicken, sesame chicken, general tso's, chicken nuggets, tempura, fried fish sandwich, mozzarella sticks) ARE ultra_processed. Dishes with SWEETENED/SUGARY sauces as the primary flavor (orange chicken, sweet & sour, teriyaki glaze, BBQ pulled-pork) ARE ultra_processed.
 
-SERVING SIZE REFERENCE (estimate servings in these units):
-- vegetable/leafy_crucifer: 1 serving = 1/2 cup cooked OR 1 cup raw
-- fruit: 1 serving = 1 medium piece OR 1/2 cup chopped/berries
-- legume_soy: 1 serving = 1/2 cup cooked beans/lentils OR 4 oz tofu
-- whole_grain: 1 serving = 1/2 cup cooked grain OR 1 slice whole-grain bread
-- nut_seed: 1 serving = 1 oz (~1/4 cup nuts or 2 tbsp seeds/nut butter)
-- healthy_fat: 1 serving = 1 tbsp olive oil OR 1/2 avocado OR 1 oz olives
-- fish_omega3: 1 serving = 3.5 oz cooked fatty fish
-- red_meat/processed_meat: 1 serving = 3 oz
-- sugary_drink: 1 serving = 8 oz
+SERVING SIZES (1 serving = ...):
+- vegetable/leafy_crucifer: 1/2 cup cooked OR 1 cup raw
+- fruit: 1 medium piece OR 1/2 cup chopped/berries
+- legume_soy: 1/2 cup cooked beans/lentils OR 4 oz tofu
+- whole_grain: 1/2 cup cooked grain OR 1 slice whole-grain bread
+- nut_seed: 1 oz (~1/4 cup nuts or 2 tbsp seeds/nut butter)
+- healthy_fat: 1 tbsp olive oil OR 1/2 avocado OR 1 oz olives
+- fish_omega3: 3.5 oz cooked fatty fish
+- red_meat/processed_meat: 3 oz
+- sugary_drink: 8 oz
 - ultra_processed: approximate, focus on calorie share
 
-PROCESSING LEVEL:
-- "whole": unprocessed or minimally processed (raw veg, plain cooked grains, plain fish/meat, fresh fruit)
-- "minimal": simple processing (canned beans, plain yogurt, hard cheese, olive oil, whole-grain bread)
-- "processed": noticeable processing but not NOVA-4 (cheese slices, bread with added sugar, canned soup)
-- "ultra_processed": NOVA group 4 (chips, candy, soda, fast food, packaged snacks, most cereal bars)
+Be conservative with portions if not specified. Round calories to the nearest whole number.
 
-Be conservative with portions if not specified (assume standard serving sizes). Round calories to the nearest whole number.
+OUTPUT FORMAT (return a JSON object with an "items" array):
+{
+  "items": [
+    {
+      "name": "food name",
+      "calories": 350,
+      "protein": 10,
+      "fiber": 6,
+      "quantity": "1 bowl",
+      "categories": ["whole_grain", "fruit", "nut_seed"],
+      "servings": [
+        {"category": "whole_grain", "amount": 1},
+        {"category": "fruit", "amount": 0.5},
+        {"category": "nut_seed", "amount": 0.5}
+      ]
+    }
+  ]
+}
 
-Return ONLY a valid JSON array, no other text:
-[
-  {
-    "name": "food name",
-    "calories": 350,
-    "protein": 10,
-    "fiber": 6,
-    "quantity": "1 bowl",
-    "categories": ["whole_grain", "fruit", "nut_seed"],
-    "servings": { "whole_grain": 1, "fruit": 0.5, "nut_seed": 0.5 },
-    "processingLevel": "whole"
-  }
-]
+The servings array MUST be sparse — only include entries for categories listed in this item's "categories" field. Do NOT include entries with amount 0 or null.
 
 User input: `

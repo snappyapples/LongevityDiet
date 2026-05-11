@@ -18,11 +18,16 @@ const CATEGORY_ENUM: FoodCategory[] = [
   'ultra_processed',
 ]
 
-// All categories must be present as nullable props in strict-mode schemas
-const SERVINGS_PROPS = Object.fromEntries(
-  CATEGORY_ENUM.map((c) => [c, { type: ['number', 'null'] }]),
-)
-
+/**
+ * Lean response schema — every byte the model has to emit slows down the parse.
+ * Past versions required all 12 categories as nullable keys on a `servings`
+ * object (~60 tokens per item even for "vegetable" because of all the
+ * "category":null entries). This version uses a sparse array so the model
+ * only emits servings entries that actually apply.
+ *
+ * processingLevel was also dropped — UPF is signalled via the
+ * "ultra_processed" category instead.
+ */
 const RESPONSE_SCHEMA = {
   type: 'object',
   properties: {
@@ -41,26 +46,19 @@ const RESPONSE_SCHEMA = {
             items: { type: 'string', enum: CATEGORY_ENUM },
           },
           servings: {
-            type: 'object',
-            properties: SERVINGS_PROPS,
-            required: CATEGORY_ENUM,
-            additionalProperties: false,
-          },
-          processingLevel: {
-            type: 'string',
-            enum: ['whole', 'minimal', 'processed', 'ultra_processed'],
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                category: { type: 'string', enum: CATEGORY_ENUM },
+                amount: { type: 'number' },
+              },
+              required: ['category', 'amount'],
+              additionalProperties: false,
+            },
           },
         },
-        required: [
-          'name',
-          'calories',
-          'protein',
-          'fiber',
-          'quantity',
-          'categories',
-          'servings',
-          'processingLevel',
-        ],
+        required: ['name', 'calories', 'protein', 'fiber', 'quantity', 'categories', 'servings'],
         additionalProperties: false,
       },
     },
@@ -69,7 +67,20 @@ const RESPONSE_SCHEMA = {
   additionalProperties: false,
 } as const
 
-type ParsedItem = Omit<FoodItem, 'id'>
+interface RawServingEntry {
+  category: string
+  amount: number
+}
+
+interface RawParsedItem {
+  name?: string
+  calories?: number
+  protein?: number
+  fiber?: number
+  quantity?: string | null
+  categories?: string[]
+  servings?: RawServingEntry[]
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -103,7 +114,7 @@ export async function POST(request: NextRequest) {
 
     const content = completion.choices[0]?.message?.content || '{"items":[]}'
 
-    let parsed: { items: ParsedItem[] }
+    let parsed: { items: RawParsedItem[] }
     try {
       parsed = JSON.parse(content)
     } catch {
@@ -114,15 +125,36 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Strip null-valued serving entries so the client sees a clean sparse map
     const items: FoodItem[] = (parsed.items || []).map((item) => {
-      const cleanServings = item.servings
-        ? Object.fromEntries(
-            Object.entries(item.servings).filter(
-              ([, v]) => v !== null && v !== undefined,
-            ),
+      // Convert sparse servings array to the Partial<Record<FoodCategory, number>>
+      // shape the rest of the app expects.
+      const servings: Partial<Record<FoodCategory, number>> = {}
+      const servingsArray = Array.isArray(item.servings) ? item.servings : []
+      for (const s of servingsArray) {
+        if (
+          s &&
+          typeof s.category === 'string' &&
+          CATEGORY_ENUM.includes(s.category as FoodCategory) &&
+          typeof s.amount === 'number' &&
+          s.amount > 0
+        ) {
+          servings[s.category as FoodCategory] = s.amount
+        }
+      }
+
+      const categories = Array.isArray(item.categories)
+        ? item.categories.filter((c): c is FoodCategory =>
+            CATEGORY_ENUM.includes(c as FoodCategory),
           )
+        : []
+
+      // Derive processingLevel for legacy clients: anything tagged
+      // ultra_processed in categories also gets the field set, so older
+      // CategoryChips fallback logic continues to work.
+      const processingLevel = categories.includes('ultra_processed')
+        ? 'ultra_processed'
         : undefined
+
       return {
         id: randomUUID(),
         name: item.name || 'Unknown food',
@@ -130,9 +162,9 @@ export async function POST(request: NextRequest) {
         protein: Math.round(item.protein || 0),
         fiber: Math.round(item.fiber || 0),
         quantity: item.quantity || undefined,
-        categories: Array.isArray(item.categories) ? item.categories : undefined,
-        servings: cleanServings && Object.keys(cleanServings).length > 0 ? cleanServings : undefined,
-        processingLevel: item.processingLevel,
+        categories,
+        servings: Object.keys(servings).length > 0 ? servings : undefined,
+        processingLevel,
       }
     })
 
