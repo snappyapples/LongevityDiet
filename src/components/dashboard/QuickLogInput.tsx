@@ -64,13 +64,18 @@ function generateId(): string {
 }
 
 /**
- * Top N most-frequently-logged items by name across all the meals we've fetched
- * (~30 days). Ties broken by recency. Skips legacy un-classified items so we
- * don't surface chip-less mystery rows.
+ * Top N most-frequently-logged items by name across meals of the given type
+ * over the fetched window (~30 days). Ties broken by recency. Skips legacy
+ * un-classified items so we don't surface chip-less mystery rows.
+ *
+ * Filtering by meal type means breakfast pills surface oatmeal/eggs/yogurt,
+ * dinner pills surface chicken/salmon/broccoli, etc. — the suggestions match
+ * what you actually eat *at this kind of meal*.
  */
-function deriveFrequentFoods(meals: Meal[]): FoodItem[] {
+function deriveFrequentFoods(meals: Meal[], mealType: MealType): FoodItem[] {
   const byName: Record<string, { item: FoodItem; count: number; lastSeen: number }> = {}
   for (const m of meals) {
+    if (m.type !== mealType) continue
     const ts = m.createdAt ? new Date(m.createdAt).getTime() : 0
     for (const item of m.items || []) {
       const key = (item.name || '').trim().toLowerCase()
@@ -135,7 +140,7 @@ export function QuickLogInput({ meals, onSave }: QuickLogInputProps) {
     }
   }, [])
 
-  const frequentFoods = useMemo(() => deriveFrequentFoods(meals), [meals])
+  const frequentFoods = useMemo(() => deriveFrequentFoods(meals, mealType), [meals, mealType])
   const stagedNames = useMemo(
     () => new Set(stagedItems.map((s) => s.name.trim().toLowerCase())),
     [stagedItems],
@@ -446,7 +451,7 @@ export function QuickLogInput({ meals, onSave }: QuickLogInputProps) {
       {visibleFrequent.length > 0 && (
         <div className="mb-3">
           <div className="text-xs font-medium text-muted-foreground mb-1.5 uppercase tracking-wide">
-            Quick add from your usuals
+            Your usual {MEAL_LABELS[mealType].toLowerCase()}
           </div>
           <div className="flex flex-wrap gap-1.5">
             {visibleFrequent.map((food, i) => (
