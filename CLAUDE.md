@@ -44,7 +44,11 @@ FitnessLove is a Next.js 16 nutrition tracking app with AI-powered meal logging.
 
 Two independent scoring systems; which one is displayed is controlled by `settings.scoringMode`.
 
-**Longevity (default)** — adapted AHEI-2010 0-100 score. The score is a **pure 7-day rolling window**, computed in one shot from all items in the last 7 days (not an average of daily scores). 10 components (6 positive density-normalized + 1 weekly fish + 3 reverse-scored harm categories) sum to 100. Logging any item moves the score by exactly its contribution to the window totals — no daily reset, no empty-day math. The main card shows the headline score plus a ranked list of all 10 components (biggest gap first), each with an add/avoid icon and a concrete food tip. Components within 0.5 pts of max collapse into a "dialed in" footer. The 4 grouped subscores (Plants / Fat Quality / Protein Quality / Harm Reduction) are still rendered on per-day cards for pattern-spotting. See [docs/LONGEVITY_SCORE.md](docs/LONGEVITY_SCORE.md) for the full model, scoring library, and UI component map.
+**Longevity (default)** — adapted AHEI-2010 0-100 score. The score is a **pure 7-day rolling window**, computed in one shot from all items in the last 7 days (not an average of daily scores). 10 components (6 positive density-normalized + 1 weekly fish + 3 reverse-scored harm categories) sum to 100. Logging any item moves the score by exactly its contribution to the window totals — no daily reset, no empty-day math. The main card shows the headline score plus a ranked list of all 10 components (biggest gap first), each with an add/avoid icon and a concrete food tip. Components within 0.5 pts of max collapse into a "dialed in" footer. The 4 grouped subscores (Plants / Fat Quality / Protein Quality / Harm Reduction) are still rendered on per-day cards for pattern-spotting.
+
+In addition to the 0-100 score, a **separate daily protein rail** lives inside the same card (Attia-style target = `weight × 0.7 g/lb` by default). It tracks today's protein grams against the daily target — *not* rolling — because muscle protein synthesis resets each day. Protein is intentionally NOT folded into the AHEI 0-100 score; the two operate on different physiology and time horizons.
+
+See [docs/LONGEVITY_SCORE.md](docs/LONGEVITY_SCORE.md) for the full model, scoring library, and UI component map.
 
 **Macros (legacy)** — three metrics from `src/types/index.ts`:
 - **Calories**: 100% if under goal, degrades to 0 at 120% of goal
@@ -83,6 +87,7 @@ src/
 │   │   ├── LongevityScoreRing.tsx  # Reusable 0-100 ring
 │   │   ├── LongevitySubscoreBar.tsx # Horizontal filled bar for subscores (used in day cards only)
 │   │   ├── LongevityComponentList.tsx # Ranked 10-component list w/ tips + add/avoid icons + expand/dialed-in footer (main card)
+│   │   ├── ProteinRail.tsx         # Daily protein bar inside main card (Attia target, not folded into 0-100 score)
 │   │   ├── LongevityHelpSheet.tsx  # In-app "how the score works" explainer
 │   │   ├── QuickLogInput.tsx       # Inline quick-add with Log-it / Evaluate flows + rolling-delta preview
 │   │   └── CategoryChips.tsx       # Shared chip rendering for food categories
@@ -94,6 +99,7 @@ src/
 │   ├── supabase-server.ts      # Server-side Supabase (uses cookies)
 │   ├── openai.ts               # OpenAI client + PARSE_MEAL_PROMPT (with longevity categories)
 │   ├── mindfulness.ts          # Mindful eating calculations and thresholds
+│   ├── protein-target.ts       # Attia-style daily protein target (weight × multiplier) + today's protein sum
 │   └── longevity-score.ts      # scoreWindow (rolling), scoreDay (per-day card), buildLongevityReport, getRankedComponentTips
 ├── middleware.ts               # Auth session sync on every request
 └── types/index.ts              # All TypeScript types + macros scoring logic

@@ -10,7 +10,9 @@ import { LongevityScoreRing } from './LongevityScoreRing'
 import { LongevityDayCard } from './LongevityDayCard'
 import { LongevityHelpSheet } from './LongevityHelpSheet'
 import { LongevityComponentList } from './LongevityComponentList'
+import { ProteinRail } from './ProteinRail'
 import { QuickLogInput } from './QuickLogInput'
+import { useSettings } from '@/components/settings/SettingsSheet'
 import type { DayData, FoodItem, Meal, MealContext, MealType } from '@/types'
 import { buildLongevityReport } from '@/lib/longevity-score'
 import { cn } from '@/lib/utils'
@@ -69,6 +71,7 @@ function totalsFromItems(items: FoodItem[]) {
 }
 
 export function LongevityDashboard() {
+  const settings = useSettings()
   const [allMeals, setAllMeals] = useState<Meal[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -320,6 +323,8 @@ export function LongevityDashboard() {
             <DeltaBadge delta={report.weeklyDelta} />
           </div>
         </div>
+
+        <ProteinRail meals={allMeals} weightLbs={settings.weight} />
 
         <LongevityComponentList report={report} />
       </Card>

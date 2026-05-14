@@ -58,6 +58,8 @@ LongevityDashboard renders: 7-day ring, today's score, subscores, day cards, tip
 | [src/components/dashboard/LongevityComponentList.tsx](../src/components/dashboard/LongevityComponentList.tsx) | Ranked 10-component list with tips, add/avoid icons, expand, and "dialed in" footer. Replaces the 4 subscore bars + Next-best-bite callout on the main card |
 | [src/components/dashboard/LongevityHelpSheet.tsx](../src/components/dashboard/LongevityHelpSheet.tsx) | In-app explainer reachable via `?` button |
 | [src/components/dashboard/QuickLogInput.tsx](../src/components/dashboard/QuickLogInput.tsx) | Inline quick-add card rendered between the score ring and the day list. "Log it" and "Evaluate" flows; rolling-score delta + per-component gain chips |
+| [src/components/dashboard/ProteinRail.tsx](../src/components/dashboard/ProteinRail.tsx) | Daily protein bar rendered inside the main score card. Tracks today's grams against `weight × multiplier`; daily reset (NOT rolling). |
+| [src/lib/protein-target.ts](../src/lib/protein-target.ts) | `getProteinTarget`, `getTodayProtein`, multiplier presets (gentle 0.7, standard 0.85, full 1.0). |
 | [src/components/logging/LogMealSheet.tsx](../src/components/logging/LogMealSheet.tsx) | Full-sheet meal editor. Accepts `hideMindfulness` to drop the hunger/calm inputs (used in longevity mode) |
 | [src/components/dashboard/CategoryChips.tsx](../src/components/dashboard/CategoryChips.tsx) | Shared chip rendering for item categories |
 | [src/components/dashboard/MealRow.tsx](../src/components/dashboard/MealRow.tsx) | Mode-aware: macros shows efficiency, longevity shows category chips |
@@ -201,6 +203,20 @@ The dashboard routes on `settings.scoringMode`:
 Toggle in Settings → Scoring Mode. Both modes read the same `meals` table; the data model is a superset.
 
 In longevity mode, `MealRow` swaps the protein/fiber efficiency badges for category chips. In macros mode, everything behaves as it always did. The goal input fields and BMR calculator in settings are hidden in longevity mode (they don't apply).
+
+## Protein Rail (daily, separate from the 0–100 score)
+
+Per Peter Attia (Outlive), recommended daily protein intake is **body-weight-based**, not calorie-based, and **does not roll over week to week**. Muscle protein synthesis resets each day, so a missed day cannot be made up later — fundamentally different physiology from the AHEI components.
+
+For that reason, protein is rendered as its own rail inside the main score card and is **deliberately not folded into the 0–100 longevity score**:
+
+- **Target** = `weight × multiplier (g/lb)` rounded to the nearest gram. Multiplier defaults to `0.7` (gentle). Presets in [`src/lib/protein-target.ts`](../src/lib/protein-target.ts): gentle `0.7`, standard `0.85`, full `1.0`. For 220 lb at gentle that's 154 g/day.
+- **Today's protein** = sum of `totalProtein` across all of today's meals (by `date` string match, no timezone math).
+- **Bar color**: ≥100% green, ≥67% yellow, <67% red.
+- **Late-day tip**: when local hour ≥ 17 and you're below 70% of target, a one-liner suggests catch-up foods ("1 cup Greek yogurt ~23g, ½ cup cottage cheese ~13g, whey scoop ~25g").
+- **Day cards** add a "`Xg protein`" tag in the subtitle so the trailing week is visible at a glance.
+
+The rail reads `weight` from the existing `settings` row. No schema migration was required for this feature — the multiplier is hardcoded at `DEFAULT_PROTEIN_MULTIPLIER = 0.7` in [`src/lib/protein-target.ts`](../src/lib/protein-target.ts). A future settings toggle for the multiplier is straightforward to add when desired.
 
 ## Quick Log (longevity mode only)
 

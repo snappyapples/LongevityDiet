@@ -50,7 +50,9 @@ export function LongevityDayCard({
           <div className="flex-1">
             <h3 className="font-semibold text-base">{formatDateLabel(data.date)}</h3>
             <p className="text-sm text-muted-foreground mt-0.5">
-              {score.hasData ? `${data.meals.length} meal${data.meals.length === 1 ? '' : 's'}` : 'No meals logged'}
+              {score.hasData
+                ? `${data.meals.length} meal${data.meals.length === 1 ? '' : 's'} · ${Math.round(data.totalProtein)}g protein`
+                : 'No meals logged'}
             </p>
           </div>
           <div className="flex items-center gap-3">
