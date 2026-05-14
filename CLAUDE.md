@@ -32,6 +32,7 @@ FitnessLove is a Next.js 16 nutrition tracking app with AI-powered meal logging.
    - Longevity mode: `GET /api/meals?days=14` → client computes `LongevityReport` via `buildLongevityReport()` (14 days needed for current-vs-prior-7d delta)
 4. **Dashboard Routing**: The root `Dashboard` component reads `settings.scoringMode` and renders either `MacrosDashboard` (original) or `LongevityDashboard` (new).
 5. **Quick Log**: The longevity view renders a `QuickLogInput` card between the score ring and the day list. Meal type is auto-picked from time of day (breakfast 04:00–10:30, lunch 10:30–15:00, dinner 15:00–20:30, snack otherwise). Two flows — "Log it" and "Evaluate" — both parse via the same `/api/parse-meal` endpoint, show parsed items + a rolling-score delta preview with per-component gain chips, and require confirmation before saving. Mindfulness inputs (hunger/calm) are hidden in longevity mode via the `hideMindfulness` prop on `LogMealSheet`.
+6. **Meal Coach**: The speed-dial FAB has an "Ask coach" entry that opens `CoachSheet` — a conversational assistant (gpt-5-mini) that suggests meals to close the user's current nutrient + protein gaps and has **persistent memory** of preferences. `POST /api/coach` takes the conversation + a live context block (gaps, protein, meal type, memories); `/api/coach-memory` is CRUD for the `coach_memory` Supabase table. AI-proposed memories require one-tap user confirmation before they're saved. See [docs/MEAL_COACH.md](docs/MEAL_COACH.md).
 
 ### Auth Architecture
 
@@ -72,10 +73,13 @@ src/
 │   ├── api/
 │   │   ├── meals/route.ts      # CRUD for meals (Supabase)
 │   │   ├── settings/route.ts   # User settings incl. scoring_mode
-│   │   └── parse-meal/route.ts # OpenAI meal parsing + classification
+│   │   ├── parse-meal/route.ts # OpenAI meal parsing + classification (gpt-5-nano)
+│   │   ├── coach/route.ts      # Meal-coach chat turn (gpt-5-mini, structured output)
+│   │   └── coach-memory/route.ts # CRUD for coach_memory (Supabase)
 │   └── login/page.tsx          # Email/password login page
 ├── components/
 │   ├── auth/                   # AuthProvider, AuthGuard
+│   ├── coach/                  # CoachSheet — conversational meal-idea assistant
 │   ├── dashboard/
 │   │   ├── Dashboard.tsx           # Router — branches on scoringMode
 │   │   ├── DayCard.tsx             # Macros-mode day card
@@ -100,6 +104,8 @@ src/
 │   ├── openai.ts               # OpenAI client + PARSE_MEAL_PROMPT (with longevity categories)
 │   ├── mindfulness.ts          # Mindful eating calculations and thresholds
 │   ├── protein-target.ts       # Attia-style daily protein target (weight × multiplier) + today's protein sum
+│   ├── coach.ts                # Meal-coach system prompt + buildCoachContext
+│   ├── parse-cache.ts          # localStorage cache for parsed meals (parseWithCache)
 │   └── longevity-score.ts      # scoreWindow (rolling), scoreDay (per-day card), buildLongevityReport, getRankedComponentTips
 ├── middleware.ts               # Auth session sync on every request
 └── types/index.ts              # All TypeScript types + macros scoring logic
@@ -122,8 +128,11 @@ Required in `.env.local`:
   - Each item in the `items` jsonb includes: `id, name, calories, protein, fiber, quantity?, categories?, servings?, processingLevel?`. The longevity fields (last three) are populated by the parser; legacy pre-backfill items leave them `undefined` and the UI treats them accordingly.
 - `settings`: user_id (PK), age, sex, height_feet, height_inches, weight, activity_level, calorie_goal, protein_goal, fiber_goal, scoring_mode, updated_at
   - `scoring_mode`: `'macros'` or `'longevity'` (default `'longevity'`). Added via SQL migration — see [docs/LONGEVITY_SCORE.md](docs/LONGEVITY_SCORE.md).
+- `coach_memory`: id, user_id, fact (text), source (`'user'|'ai'`), created_at
+  - Persistent meal-coach memory. Added via SQL migration — see [docs/MEAL_COACH.md](docs/MEAL_COACH.md). RLS-scoped per user.
 
 ## Documentation
 
 - [docs/LONGEVITY_SCORE.md](docs/LONGEVITY_SCORE.md) — full longevity scoring model, UI component map, helpers, implementation notes.
+- [docs/MEAL_COACH.md](docs/MEAL_COACH.md) — conversational meal-coach: architecture, system prompt, memory model, `coach_memory` migration.
 - [docs/BACKFILL.md](docs/BACKFILL.md) — one-off re-classifier script usage, `FORCE_TERMS` targeted re-classification.

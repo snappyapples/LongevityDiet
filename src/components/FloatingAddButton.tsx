@@ -1,6 +1,6 @@
 'use client'
 
-import { Plus, Coffee, Sun, Moon, Cookie, Cake, Dumbbell, X } from 'lucide-react'
+import { Plus, Coffee, Sun, Moon, Cookie, Cake, Sparkles, X } from 'lucide-react'
 import { useState } from 'react'
 import { MealType } from '@/types'
 import { cn } from '@/lib/utils'
@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils'
 interface FloatingAddButtonProps {
   onSelectMeal: (type: MealType, date: string) => void
   defaultDate: string
+  onAskCoach?: () => void
 }
 
 const options: { type: MealType; icon: React.ReactNode; label: string }[] = [
@@ -18,7 +19,7 @@ const options: { type: MealType; icon: React.ReactNode; label: string }[] = [
   { type: 'indulgence', icon: <Cake className="w-5 h-5" />, label: 'Indulgence' },
 ]
 
-export function FloatingAddButton({ onSelectMeal, defaultDate }: FloatingAddButtonProps) {
+export function FloatingAddButton({ onSelectMeal, defaultDate, onAskCoach }: FloatingAddButtonProps) {
   const [open, setOpen] = useState(false)
 
   return (
@@ -48,6 +49,24 @@ export function FloatingAddButton({ onSelectMeal, defaultDate }: FloatingAddButt
                 <span className="font-medium whitespace-nowrap">{opt.label}</span>
               </button>
             ))}
+
+            {onAskCoach && (
+              <button
+                onClick={() => {
+                  onAskCoach()
+                  setOpen(false)
+                }}
+                className={cn(
+                  'flex items-center gap-3 px-4 py-3 bg-primary text-primary-foreground rounded-full shadow-lg',
+                  'hover:opacity-90 transition-all',
+                  'animate-in fade-in slide-in-from-bottom-2',
+                )}
+                style={{ animationDelay: `${options.length * 50}ms` }}
+              >
+                <Sparkles className="w-5 h-5" />
+                <span className="font-medium whitespace-nowrap">Ask coach</span>
+              </button>
+            )}
           </div>
         </>
       )}

@@ -208,3 +208,22 @@ export interface LongevityReport {
   lastWeekAvg: number | null          // prior 7-day window score
   weeklyDelta: number | null          // rollingScore - lastWeekAvg
 }
+
+// Meal Coach — conversational AI assistant with persistent memory
+export interface CoachMemory {
+  id: string
+  fact: string                  // short atomic preference/constraint, e.g. "Doesn't like tofu"
+  source: 'user' | 'ai'         // who originated it ('ai' = AI-proposed, user-confirmed)
+  createdAt: string
+}
+
+export interface CoachMessage {
+  role: 'user' | 'assistant'
+  content: string
+}
+
+// Structured AI response from /api/coach
+export interface CoachResponse {
+  reply: string                       // conversational answer (may contain meal ideas)
+  suggestedMemories: string[]         // durable facts the AI proposes to remember (user confirms)
+}

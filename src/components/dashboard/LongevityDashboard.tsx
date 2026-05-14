@@ -12,6 +12,7 @@ import { LongevityHelpSheet } from './LongevityHelpSheet'
 import { LongevityComponentList } from './LongevityComponentList'
 import { ProteinRail } from './ProteinRail'
 import { QuickLogInput } from './QuickLogInput'
+import { CoachSheet } from '@/components/coach/CoachSheet'
 import { useSettings } from '@/components/settings/SettingsSheet'
 import type { DayData, FoodItem, Meal, MealContext, MealType } from '@/types'
 import { buildLongevityReport } from '@/lib/longevity-score'
@@ -79,6 +80,7 @@ export function LongevityDashboard() {
   const [selectedMealType, setSelectedMealType] = useState<MealType | null>(null)
   const [editingMeal, setEditingMeal] = useState<Meal | null>(null)
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
+  const [coachOpen, setCoachOpen] = useState(false)
 
   const fetchData = useCallback(async () => {
     try {
@@ -356,7 +358,11 @@ export function LongevityDashboard() {
         )}
       </div>
 
-      <FloatingAddButton onSelectMeal={handleLogMeal} defaultDate={format(new Date(), 'yyyy-MM-dd')} />
+      <FloatingAddButton
+        onSelectMeal={handleLogMeal}
+        defaultDate={format(new Date(), 'yyyy-MM-dd')}
+        onAskCoach={() => setCoachOpen(true)}
+      />
 
       <LogMealSheet
         open={sheetOpen}
@@ -365,6 +371,14 @@ export function LongevityDashboard() {
         editingMeal={editingMeal}
         onSave={handleSaveMeal}
         hideMindfulness
+      />
+
+      <CoachSheet
+        open={coachOpen}
+        onOpenChange={setCoachOpen}
+        report={report}
+        meals={allMeals}
+        weightLbs={settings.weight}
       />
     </>
   )
