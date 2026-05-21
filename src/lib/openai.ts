@@ -51,11 +51,11 @@ CATEGORY DEFINITIONS (an ingredient can belong to multiple — e.g. walnuts hit 
 - "vegetable": any non-starchy vegetable (broccoli, spinach, peppers, tomato, cucumber, zucchini, etc.). Potatoes do NOT qualify.
 - "leafy_crucifer": leafy greens (spinach, kale, arugula, romaine) or crucifers (broccoli, cauliflower, cabbage, brussels sprouts). ALSO include "vegetable" when this applies.
 - "fruit": whole fruit (berries, apple, banana, orange, melon). Fruit juice is NOT fruit — it's a "sugary_drink".
-- "legume_soy": beans, lentils, chickpeas, peas, tofu, tempeh, edamame, soy milk.
+- "legume_soy": beans, lentils, chickpeas, peas, tofu, tempeh, edamame, soy milk. PEANUTS AND PEANUT BUTTER DO NOT QUALIFY — they are botanically legumes but AHEI scores them as nuts. Classify peanut/peanut butter as nut_seed ONLY (never legume_soy).
 - "whole_grain": oatmeal, brown rice, quinoa, whole wheat, barley, farro, bulgur, 100% whole-grain bread/pasta. Refined grains do NOT qualify.
-- "nut_seed": nuts (almonds, walnuts, pistachios, pecans, cashews) and seeds (chia, flax, pumpkin, sunflower). Nut butters count.
+- "nut_seed": nuts (almonds, walnuts, pistachios, pecans, cashews, PEANUTS) and seeds (chia, flax, pumpkin, sunflower). Nut butters and peanut butter count.
 - "healthy_fat": EVOO, avocado, olives, fatty fish, nuts/seeds. Butter, coconut oil, industrial seed oils, margarine do NOT qualify.
-- "fish_omega3": fatty fish (salmon, sardines, trout, herring, mackerel, anchovies). Lean white fish (tilapia, cod) does NOT qualify.
+- "fish_omega3": fatty fish (salmon, sardines, trout, herring, mackerel, anchovies). Lean white fish (tilapia, cod) does NOT qualify. TUNA is ambiguous — when the user just says "tuna" (no qualifier), assume canned/light tuna which is LEAN and does NOT qualify (neutral). Only classify as fish_omega3 if the user specifies fresh tuna steak, sashimi/sushi tuna, bluefin tuna, or albacore-in-oil.
 - "red_meat": unprocessed BEEF, PORK, LAMB, BISON, VENISON, GOAT only. POULTRY IS NOT RED MEAT — chicken, turkey, duck, goose belong to NO positive category (they are neutral). Meatballs/meatloaf default to red_meat UNLESS the name specifies poultry ("turkey meatballs", "chicken meatballs").
 - "processed_meat": bacon, sausage, hot dog, deli/lunch meat, salami, pepperoni, ham, jerky, cured meats. Chicken sausage and turkey bacon still count.
 - "sugary_drink": soda, sweetened coffee drinks, sports drinks, energy drinks, fruit juice, lemonade, sweet tea.
