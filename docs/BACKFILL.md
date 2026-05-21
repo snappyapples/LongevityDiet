@@ -25,7 +25,7 @@ Safe to re-run: already-classified meals (without a force-terms match) are skipp
 From PowerShell, in the project directory:
 
 ```powershell
-cd C:\Users\justi\Documents\aiPersonal\FitnessLove
+cd C:\Users\justi\Documents\aiPersonal\FitnessLove   # project folder (pre-rename)
 $env:APP_EMAIL = "your-app-login@example.com"
 $env:APP_PASSWORD = "your-password"
 node scripts/backfill-longevity.mjs

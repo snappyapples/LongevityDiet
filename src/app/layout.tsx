@@ -3,13 +3,13 @@ import './globals.css'
 import { AuthProvider } from '@/components/auth/AuthProvider'
 
 export const metadata: Metadata = {
-  title: 'FitnessLove',
-  description: 'Track your nutrition with AI-powered meal logging',
+  title: 'Longevity Diet',
+  description: 'The science-backed diet for a longer, healthier life.',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'FitnessLove',
+    title: 'Longevity Diet',
   },
   formatDetection: {
     telephone: false,

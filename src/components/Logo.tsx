@@ -58,8 +58,8 @@ export function Logo({ size = 'md', showText = true, className }: LogoProps) {
 
       {showText && (
         <span className={cn('font-bold tracking-tight', text)}>
-          <span className="text-nutrition-green-dark">Fitness</span>
-          <span className="text-nutrition-green">Love</span>
+          <span className="text-nutrition-green-dark">Longevity</span>
+          <span className="text-nutrition-green"> Diet</span>
         </span>
       )}
     </div>

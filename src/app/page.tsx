@@ -17,7 +17,7 @@ function HomeContent() {
         <div className="flex items-center justify-between">
           <div>
             <Logo size="md" className="text-white [&_span]:text-white" />
-            <p className="text-xs text-white/80 mt-0.5">Fuel Well. Move More. Love the Results.</p>
+            <p className="text-xs text-white/80 mt-0.5">The science-backed diet for a longer, healthier life.</p>
           </div>
           <div className="flex items-center gap-2">
             <SettingsSheet />

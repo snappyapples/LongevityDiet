@@ -46,9 +46,9 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">FitnessLove</CardTitle>
+          <CardTitle className="text-2xl font-bold">Longevity Diet</CardTitle>
           <CardDescription>
-            Sign in to your account
+            The science-backed diet for a longer, healthier life.
           </CardDescription>
         </CardHeader>
         <CardContent>

@@ -1,7 +1,7 @@
 {
-  "name": "FitnessLove",
-  "short_name": "FitnessLove",
-  "description": "Track your nutrition with AI-powered meal logging",
+  "name": "Longevity Diet",
+  "short_name": "Longevity",
+  "description": "The science-backed diet for a longer, healthier life.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
