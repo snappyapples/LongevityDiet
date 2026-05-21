@@ -70,9 +70,11 @@ export function LongevityDayCard({
         className="w-full flex items-center justify-between p-3 pr-4 hover:bg-secondary/30 transition-colors border-b"
       >
         <div className="flex-1 text-left">
-          <h3 className="font-medium">{formatDateLabel(data.date)}</h3>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            {score.hasData ? `${data.meals.length} meal${data.meals.length === 1 ? '' : 's'}` : 'No meals logged'}
+          <h3 className="font-semibold text-base">{formatDateLabel(data.date)}</h3>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {score.hasData
+              ? `${data.meals.length} meal${data.meals.length === 1 ? '' : 's'} · ${Math.round(data.totalProtein)}g protein`
+              : 'No meals logged'}
           </p>
         </div>
         <div className="flex items-center gap-3">

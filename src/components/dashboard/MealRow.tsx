@@ -60,7 +60,9 @@ export function MealRow({ meal, onEdit, onDelete }: MealRowProps) {
           <span className="font-semibold text-base">{mealLabels[meal.type]}</span>
         </div>
         <div className="flex items-center gap-4">
-          <span className="text-sm text-muted-foreground font-medium">{meal.totalCalories} cal</span>
+          <span className="text-sm text-muted-foreground font-medium tabular-nums">
+            {meal.totalCalories} cal · {Math.round(meal.totalProtein)}g P
+          </span>
           {expanded ? (
             <ChevronUp className="w-4 h-4 text-muted-foreground" />
           ) : (
@@ -84,7 +86,10 @@ export function MealRow({ meal, onEdit, onDelete }: MealRowProps) {
                   <CategoryChips item={item} />
                 </div>
               </div>
-              <span className="text-muted-foreground text-right text-sm whitespace-nowrap pt-0.5">{item.calories} cal</span>
+              <span className="text-muted-foreground text-right text-sm whitespace-nowrap pt-0.5 tabular-nums">
+                {item.calories} cal
+                {item.protein > 0 && ` · ${Math.round(item.protein)}g P`}
+              </span>
             </div>
           ))}
           {meal.context?.notes && (
