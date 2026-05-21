@@ -3,7 +3,6 @@
 import { Dashboard } from '@/components/dashboard/Dashboard'
 import { Logo } from '@/components/Logo'
 import { SettingsSheet } from '@/components/settings/SettingsSheet'
-import { MindfulnessReport } from '@/components/dashboard/MindfulnessReport'
 import { AuthGuard } from '@/components/auth/AuthGuard'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { Button } from '@/components/ui/button'
@@ -21,7 +20,6 @@ function HomeContent() {
             <p className="text-xs text-white/80 mt-0.5">Fuel Well. Move More. Love the Results.</p>
           </div>
           <div className="flex items-center gap-2">
-            <MindfulnessReport />
             <SettingsSheet />
             <Button
               variant="ghost"

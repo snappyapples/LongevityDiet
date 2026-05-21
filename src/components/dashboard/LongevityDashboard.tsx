@@ -11,7 +11,6 @@ import { LongevityDayCard } from './LongevityDayCard'
 import { LongevityHelpSheet } from './LongevityHelpSheet'
 import { LongevityComponentList } from './LongevityComponentList'
 import { ProteinRail } from './ProteinRail'
-import { QuickLogInput } from './QuickLogInput'
 import { CoachSheet } from '@/components/coach/CoachSheet'
 import { useSettings } from '@/components/settings/SettingsSheet'
 import type { DayData, FoodItem, Meal, MealContext, MealType } from '@/types'
@@ -52,8 +51,6 @@ function buildDays(meals: Meal[], today: Date, numDays: number): DayData[] {
       totalCalories,
       totalProtein,
       totalFiber,
-      proteinPerCalorie: totalCalories > 0 ? totalProtein / totalCalories : 0,
-      fiberPerCalorie: totalCalories > 0 ? totalFiber / totalCalories : 0,
     })
   }
   return out
@@ -86,9 +83,8 @@ export function LongevityDashboard() {
     try {
       setError(null)
       const today = format(new Date(), 'yyyy-MM-dd')
-      // Fetch 30 days. Last 14 power the score (current 7 + prior 7); the
-      // additional history feeds the QuickLogInput's frequent-foods pills.
-      const res = await fetch(`/api/meals?days=30&today=${today}`)
+      // 14 days = current 7-day window + prior 7-day window for the delta.
+      const res = await fetch(`/api/meals?days=14&today=${today}`)
       if (!res.ok) throw new Error('Failed to fetch meals')
       const data = await res.json()
       const allDays: DayData[] = data.days || []
@@ -234,41 +230,6 @@ export function LongevityDashboard() {
     }
   }
 
-  // Optimistic create from QuickLogInput (no edit path here).
-  const handleQuickSave = async (type: MealType, date: string, items: FoodItem[]) => {
-    setError(null)
-    const tempId = makeTempId()
-    const totals = totalsFromItems(items)
-    const optimistic: Meal = {
-      id: tempId,
-      type,
-      date,
-      items,
-      context: {},
-      ...totals,
-      createdAt: new Date().toISOString(),
-    }
-    setAllMeals((prev) => [...prev, optimistic])
-    void (async () => {
-      try {
-        const res = await fetch('/api/meals', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ type, date, items, context: {} }),
-        })
-        if (!res.ok) throw new Error('Failed to save meal')
-        const data = await res.json()
-        if (data?.meal) {
-          setAllMeals((prev) => prev.map((m) => (m.id === tempId ? (data.meal as Meal) : m)))
-        }
-      } catch (err) {
-        console.error('Failed to save meal:', err)
-        setAllMeals((prev) => prev.filter((m) => m.id !== tempId))
-        setError('Failed to save meal. Please try again.')
-      }
-    })()
-  }
-
   const handleSheetClose = (open: boolean) => {
     setSheetOpen(open)
     if (!open) {
@@ -331,8 +292,6 @@ export function LongevityDashboard() {
         <LongevityComponentList report={report} />
       </Card>
 
-      <QuickLogInput meals={allMeals} onSave={handleQuickSave} />
-
       <div className="space-y-4 pb-24">
         {days.map((day) => {
           const dayScore = scoresByDate.get(day.date)
@@ -370,7 +329,6 @@ export function LongevityDashboard() {
         mealType={selectedMealType}
         editingMeal={editingMeal}
         onSave={handleSaveMeal}
-        hideMindfulness
       />
 
       <CoachSheet

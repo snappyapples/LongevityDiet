@@ -23,22 +23,6 @@ const mealLabels: Record<MealType, string> = {
   indulgence: 'Indulgence',
 }
 
-const hungerDescriptions: Record<number, string> = {
-  1: 'Not hungry - eating for other reasons',
-  2: 'Slightly hungry - could wait a bit longer',
-  3: 'Moderately hungry - ideal time to eat',
-  4: 'Very hungry - strong hunger signals',
-  5: 'Starving - overly hungry, may lead to overeating',
-}
-
-const stressDescriptions: Record<number, string> = {
-  1: 'Not calm - overwhelmed or very stressed',
-  2: 'Slightly calm - significant tension',
-  3: 'Moderately calm - some pressure',
-  4: 'Quite calm - minor tension',
-  5: 'Very calm - relaxed and at ease',
-}
-
 // Editable food item component
 function EditableFoodItem({
   item,
@@ -157,42 +141,24 @@ interface LogMealSheetProps {
   mealType: MealType | null
   editingMeal: Meal | null
   onSave: (items: FoodItem[], context: MealContext) => Promise<void>
-  hideMindfulness?: boolean
 }
 
-export function LogMealSheet({ open, onOpenChange, mealType, editingMeal, onSave, hideMindfulness = false }: LogMealSheetProps) {
+export function LogMealSheet({ open, onOpenChange, mealType, editingMeal, onSave }: LogMealSheetProps) {
   const [input, setInput] = useState('')
   const [items, setItems] = useState<FoodItem[]>([])
   const [parsing, setParsing] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [context, setContext] = useState<MealContext>({
-    hungerLevel: undefined,
-    stressLevel: undefined,
-    ateWithOthers: false,
-    notes: '',
-  })
+  const [notes, setNotes] = useState('')
 
   // Reset or populate form when sheet opens
   useEffect(() => {
     if (open) {
       if (editingMeal) {
-        // Editing existing meal - populate form
         setItems(editingMeal.items)
-        setContext(editingMeal.context || {
-          hungerLevel: undefined,
-          stressLevel: undefined,
-          ateWithOthers: false,
-          notes: '',
-        })
+        setNotes(editingMeal.context?.notes || '')
       } else {
-        // New meal - reset form
         setItems([])
-        setContext({
-          hungerLevel: undefined,
-          stressLevel: undefined,
-          ateWithOthers: false,
-          notes: '',
-        })
+        setNotes('')
       }
       setInput('')
     }
@@ -206,7 +172,7 @@ export function LogMealSheet({ open, onOpenChange, mealType, editingMeal, onSave
     try {
       const parsed = await parseWithCache(input)
       if (parsed.length > 0) {
-        setItems(prev => [...prev, ...parsed])
+        setItems((prev) => [...prev, ...parsed])
         setInput('')
       }
     } catch (err) {
@@ -217,21 +183,22 @@ export function LogMealSheet({ open, onOpenChange, mealType, editingMeal, onSave
   }
 
   const handleRemoveItem = (id: string) => {
-    setItems(items.filter(item => item.id !== id))
+    setItems(items.filter((item) => item.id !== id))
   }
 
   const handleUpdateItem = (updated: FoodItem) => {
-    setItems(items.map(item => item.id === updated.id ? updated : item))
+    setItems(items.map((item) => (item.id === updated.id ? updated : item)))
   }
 
   const handleSave = async () => {
     if (items.length === 0) return
     setSaving(true)
     try {
+      const context: MealContext = notes.trim() ? { notes: notes.trim() } : {}
       await onSave(items, context)
       setItems([])
       setInput('')
-      setContext({ hungerLevel: undefined, stressLevel: undefined, ateWithOthers: false, notes: '' })
+      setNotes('')
       onOpenChange(false)
     } catch (err) {
       console.error('Failed to save meal:', err)
@@ -300,97 +267,24 @@ export function LogMealSheet({ open, onOpenChange, mealType, editingMeal, onSave
             </div>
           )}
 
-          {/* Context inputs */}
+          {/* Save + optional notes */}
           <div className="space-y-3">
-            {!hideMindfulness && (
-              <>
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium">
-                    Hunger Level <span className="text-destructive">*</span>
-                  </label>
-                  <div className="flex gap-1">
-                    {[1, 2, 3, 4, 5].map((level) => (
-                      <button
-                        key={level}
-                        onClick={() => setContext({ ...context, hungerLevel: level })}
-                        className={`flex-1 py-2 text-sm rounded-md border transition-colors ${
-                          context.hungerLevel === level
-                            ? 'bg-primary text-primary-foreground'
-                            : 'hover:bg-secondary'
-                        }`}
-                      >
-                        {level}
-                      </button>
-                    ))}
-                  </div>
-                  <p className="text-xs text-muted-foreground min-h-[1rem]">
-                    {context.hungerLevel ? hungerDescriptions[context.hungerLevel] : 'Select your hunger level before eating'}
-                  </p>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium">
-                    Calm Level <span className="text-destructive">*</span>
-                  </label>
-                  <div className="flex gap-1">
-                    {[1, 2, 3, 4, 5].map((level) => (
-                      <button
-                        key={level}
-                        onClick={() => setContext({ ...context, stressLevel: level })}
-                        className={`flex-1 py-2 text-sm rounded-md border transition-colors ${
-                          context.stressLevel === level
-                            ? 'bg-primary text-primary-foreground'
-                            : 'hover:bg-secondary'
-                        }`}
-                      >
-                        {level}
-                      </button>
-                    ))}
-                  </div>
-                  <p className="text-xs text-muted-foreground min-h-[1rem]">
-                    {context.stressLevel ? stressDescriptions[context.stressLevel] : 'Select your calm level at mealtime'}
-                  </p>
-                </div>
-              </>
-            )}
-
-            {/* Save button - moved up for accessibility */}
             <Button
               onClick={handleSave}
-              disabled={
-                items.length === 0 ||
-                saving ||
-                (!hideMindfulness && (context.hungerLevel === undefined || context.stressLevel === undefined))
-              }
+              disabled={items.length === 0 || saving}
               className="w-full h-12 text-base font-medium"
               size="lg"
             >
-              {saving ? (
-                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-              ) : null}
+              {saving ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : null}
               {isEditing ? 'Update' : 'Save'} {mealType ? mealLabels[mealType] : 'Meal'}
             </Button>
 
-            {!hideMindfulness && (
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setContext({ ...context, ateWithOthers: !context.ateWithOthers })}
-                  className={`px-3 py-1.5 text-sm rounded-md border transition-colors ${
-                    context.ateWithOthers
-                      ? 'bg-primary text-primary-foreground'
-                      : 'hover:bg-secondary'
-                  }`}
-                >
-                  Ate with others
-                </button>
-                <Input
-                  placeholder="Notes..."
-                  value={context.notes || ''}
-                  onChange={(e) => setContext({ ...context, notes: e.target.value })}
-                  className="flex-1 h-8 text-sm"
-                />
-              </div>
-            )}
+            <Input
+              placeholder="Notes (optional)…"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className="h-9 text-sm"
+            />
           </div>
         </div>
       </SheetContent>

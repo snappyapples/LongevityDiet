@@ -2,9 +2,8 @@
 
 import { useState } from 'react'
 import { ChevronDown, ChevronUp, Coffee, Sun, Moon, Cookie, Cake, Pencil, Trash2 } from 'lucide-react'
-import { Meal, MealType, getProteinQuality, QualityLevel, DAILY_GOALS } from '@/types'
+import { Meal, MealType } from '@/types'
 import { cn } from '@/lib/utils'
-import { useSettings } from '@/components/settings/SettingsSheet'
 import { CategoryChips } from './CategoryChips'
 
 const mealIcons: Record<MealType, React.ReactNode> = {
@@ -23,184 +22,6 @@ const mealLabels: Record<MealType, string> = {
   indulgence: 'Indulgence',
 }
 
-function QualityDot({ level }: { level: QualityLevel }) {
-  const colorMap = {
-    green: 'bg-quality-green',
-    yellow: 'bg-quality-yellow',
-    red: 'bg-quality-red',
-    muted: 'bg-muted-foreground',
-  }
-  return <div className={cn('w-2 h-2 rounded-full', colorMap[level])} />
-}
-
-// Interactive metric that shows efficiency index with math breakdown in tooltip
-function RatioMetric({
-  value,
-  unit,
-  calories,
-  type,
-  nutrientGoal,
-  calorieGoal
-}: {
-  value: number
-  unit: string
-  calories: number
-  type: 'protein' | 'fiber'
-  nutrientGoal: number
-  calorieGoal: number
-}) {
-  const [showRatio, setShowRatio] = useState(false)
-
-  // Calculate raw percentages of daily goals (for accurate efficiency)
-  const rawNutrientPercent = nutrientGoal > 0 ? (value / nutrientGoal) * 100 : 0
-  const rawCaloriePercent = calorieGoal > 0 ? (calories / calorieGoal) * 100 : 0
-
-  // Efficiency calculated from raw values, then rounded
-  const efficiencyIndex = rawCaloriePercent > 0 ? Math.round((rawNutrientPercent / rawCaloriePercent) * 100) : 0
-
-  // Quality based on efficiency: green >= 100%, yellow >= 67%, red < 67%
-  const quality: QualityLevel = efficiencyIndex >= 100 ? 'green' : efficiencyIndex >= 67 ? 'yellow' : 'red'
-
-  // Format percentages for display (show <1% for small non-zero values)
-  const nutrientPercent = rawNutrientPercent > 0 && rawNutrientPercent < 1 ? '<1' : Math.round(rawNutrientPercent)
-  const caloriePercent = rawCaloriePercent > 0 && rawCaloriePercent < 1 ? '<1' : Math.round(rawCaloriePercent)
-
-  const nutrientName = type === 'protein' ? 'Protein' : 'Fiber'
-
-  const bgColors = {
-    green: '#4CAF50',
-    yellow: '#FFCA28',
-    red: '#E53935',
-    muted: '#9E9E9E',
-  }
-
-  return (
-    <span
-      className="relative inline-block"
-      onMouseEnter={() => setShowRatio(true)}
-      onMouseLeave={() => setShowRatio(false)}
-    >
-      <span
-        className="cursor-pointer inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium text-white"
-        style={{ backgroundColor: bgColors[quality] }}
-        onClick={(e) => {
-          e.stopPropagation()
-          setShowRatio(!showRatio)
-        }}
-      >
-        {efficiencyIndex}%
-      </span>
-      {showRatio && (
-        <span
-          className="absolute right-0 top-full mt-2 z-[100]"
-        >
-          <span
-            className="absolute right-2 -top-1 w-0 h-0"
-            style={{
-              borderLeft: '6px solid transparent',
-              borderRight: '6px solid transparent',
-              borderBottom: `6px solid ${bgColors[quality]}`,
-            }}
-          />
-          <span
-            className="block px-3 py-2 rounded-lg text-xs whitespace-nowrap shadow-lg"
-            style={{
-              backgroundColor: bgColors[quality],
-              color: quality === 'yellow' ? '#000' : '#fff',
-            }}
-          >
-            <span className="font-bold block">{nutrientName}: {value}g</span>
-            <span className="block mt-1">Efficiency: {efficiencyIndex}% ({nutrientPercent}% of {type} vs {caloriePercent}% of cal)</span>
-          </span>
-        </span>
-      )}
-    </span>
-  )
-}
-
-// Version for individual food items with colored bubble
-function FoodRatioMetric({
-  value,
-  calories,
-  type,
-  nutrientGoal,
-  calorieGoal
-}: {
-  value: number
-  calories: number
-  type: 'protein' | 'fiber'
-  nutrientGoal: number
-  calorieGoal: number
-}) {
-  const [showRatio, setShowRatio] = useState(false)
-
-  // Calculate raw percentages of daily goals (for accurate efficiency)
-  const rawNutrientPercent = nutrientGoal > 0 ? (value / nutrientGoal) * 100 : 0
-  const rawCaloriePercent = calorieGoal > 0 ? (calories / calorieGoal) * 100 : 0
-
-  // Efficiency calculated from raw values, then rounded
-  const efficiencyIndex = rawCaloriePercent > 0 ? Math.round((rawNutrientPercent / rawCaloriePercent) * 100) : 0
-
-  // Quality based on efficiency: green >= 100%, yellow >= 67%, red < 67%
-  const quality: QualityLevel = efficiencyIndex >= 100 ? 'green' : efficiencyIndex >= 67 ? 'yellow' : 'red'
-
-  // Format percentages for display (show <1% for small non-zero values)
-  const nutrientPercent = rawNutrientPercent > 0 && rawNutrientPercent < 1 ? '<1' : Math.round(rawNutrientPercent)
-  const caloriePercent = rawCaloriePercent > 0 && rawCaloriePercent < 1 ? '<1' : Math.round(rawCaloriePercent)
-
-  const nutrientName = type === 'protein' ? 'Protein' : 'Fiber'
-
-  const bgColors = {
-    green: '#4CAF50',
-    yellow: '#FFCA28',
-    red: '#E53935',
-    muted: '#9E9E9E',
-  }
-
-  return (
-    <span
-      className="relative inline-block"
-      onMouseEnter={() => setShowRatio(true)}
-      onMouseLeave={() => setShowRatio(false)}
-    >
-      <span
-        className="cursor-pointer inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium text-white"
-        style={{ backgroundColor: bgColors[quality] }}
-        onClick={(e) => {
-          e.stopPropagation()
-          setShowRatio(!showRatio)
-        }}
-      >
-        {efficiencyIndex}%
-      </span>
-      {showRatio && (
-        <span
-          className="absolute right-0 bottom-full mb-2 z-[100]"
-        >
-          <span
-            className="block px-3 py-2 rounded-lg text-xs whitespace-nowrap shadow-lg"
-            style={{
-              backgroundColor: bgColors[quality],
-              color: quality === 'yellow' ? '#000' : '#fff',
-            }}
-          >
-            <span className="font-bold block">{nutrientName}: {value}g</span>
-            <span className="block mt-1">Efficiency: {efficiencyIndex}% ({nutrientPercent}% of {type} vs {caloriePercent}% of cal)</span>
-          </span>
-          <span
-            className="absolute right-2 -bottom-1 w-0 h-0"
-            style={{
-              borderLeft: '6px solid transparent',
-              borderRight: '6px solid transparent',
-              borderTop: `6px solid ${bgColors[quality]}`,
-            }}
-          />
-        </span>
-      )}
-    </span>
-  )
-}
-
 interface MealRowProps {
   meal: Meal
   onEdit: (meal: Meal) => void
@@ -210,18 +31,6 @@ interface MealRowProps {
 export function MealRow({ meal, onEdit, onDelete }: MealRowProps) {
   const [expanded, setExpanded] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
-  const settings = useSettings()
-  const isLongevity = settings.scoringMode === 'longevity'
-
-  // Get goals from settings
-  const calorieGoal = settings.calorieGoal || DAILY_GOALS.calories
-  const proteinGoal = settings.proteinGoal || DAILY_GOALS.protein
-  const fiberGoal = settings.fiberGoal || DAILY_GOALS.fiber
-
-  const proteinPerCalorie = meal.totalCalories > 0
-    ? meal.totalProtein / meal.totalCalories
-    : 0
-  const quality = getProteinQuality(proteinPerCalorie)
 
   const handleEdit = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -251,29 +60,7 @@ export function MealRow({ meal, onEdit, onDelete }: MealRowProps) {
           <span className="font-semibold text-base">{mealLabels[meal.type]}</span>
         </div>
         <div className="flex items-center gap-4">
-          <div className="flex gap-3 text-sm items-center">
-            <span className="text-muted-foreground font-medium">{meal.totalCalories} cal</span>
-            {!isLongevity && (
-              <>
-                <RatioMetric
-                  value={meal.totalProtein}
-                  unit="P"
-                  calories={meal.totalCalories}
-                  type="protein"
-                  nutrientGoal={proteinGoal}
-                  calorieGoal={calorieGoal}
-                />
-                <RatioMetric
-                  value={meal.totalFiber}
-                  unit="F"
-                  calories={meal.totalCalories}
-                  type="fiber"
-                  nutrientGoal={fiberGoal}
-                  calorieGoal={calorieGoal}
-                />
-              </>
-            )}
-          </div>
+          <span className="text-sm text-muted-foreground font-medium">{meal.totalCalories} cal</span>
           {expanded ? (
             <ChevronUp className="w-4 h-4 text-muted-foreground" />
           ) : (
@@ -284,36 +71,22 @@ export function MealRow({ meal, onEdit, onDelete }: MealRowProps) {
 
       {expanded && (
         <div className="border-t bg-secondary/30 p-3 space-y-1.5">
-          {meal.items.map((item) =>
-            isLongevity ? (
-              <div key={item.id} className="flex items-start justify-between gap-2 text-base py-1.5">
-                <div className="flex-1 min-w-0">
-                  <div className="truncate font-medium">
-                    {item.name}
-                    {item.quantity && (
-                      <span className="text-muted-foreground ml-1 text-sm font-normal">({item.quantity})</span>
-                    )}
-                  </div>
-                  <div className="mt-1.5">
-                    <CategoryChips item={item} />
-                  </div>
-                </div>
-                <span className="text-muted-foreground text-right text-sm whitespace-nowrap pt-0.5">{item.calories} cal</span>
-              </div>
-            ) : (
-              <div key={item.id} className="grid grid-cols-[1fr_auto_auto_auto] gap-2 items-center text-sm">
-                <span className="truncate">
+          {meal.items.map((item) => (
+            <div key={item.id} className="flex items-start justify-between gap-2 text-base py-1.5">
+              <div className="flex-1 min-w-0">
+                <div className="truncate font-medium">
                   {item.name}
                   {item.quantity && (
-                    <span className="text-muted-foreground ml-1 text-xs">({item.quantity})</span>
+                    <span className="text-muted-foreground ml-1 text-sm font-normal">({item.quantity})</span>
                   )}
-                </span>
-                <span className="text-muted-foreground text-right w-14">{item.calories} cal</span>
-                <FoodRatioMetric value={item.protein} calories={item.calories} type="protein" nutrientGoal={proteinGoal} calorieGoal={calorieGoal} />
-                <FoodRatioMetric value={item.fiber} calories={item.calories} type="fiber" nutrientGoal={fiberGoal} calorieGoal={calorieGoal} />
+                </div>
+                <div className="mt-1.5">
+                  <CategoryChips item={item} />
+                </div>
               </div>
-            )
-          )}
+              <span className="text-muted-foreground text-right text-sm whitespace-nowrap pt-0.5">{item.calories} cal</span>
+            </div>
+          ))}
           {meal.context?.notes && (
             <p className="text-sm text-muted-foreground italic mt-2 pt-2 border-t">
               {meal.context.notes}
@@ -330,14 +103,14 @@ export function MealRow({ meal, onEdit, onDelete }: MealRowProps) {
             <button
               onClick={handleDelete}
               className={cn(
-                "flex items-center gap-2 text-sm font-medium py-1",
+                'flex items-center gap-2 text-sm font-medium py-1',
                 confirmDelete
-                  ? "text-red-500"
-                  : "text-muted-foreground hover:text-red-500"
+                  ? 'text-red-500'
+                  : 'text-muted-foreground hover:text-red-500',
               )}
             >
               <Trash2 className="w-4 h-4" />
-              {confirmDelete ? "Tap again to delete" : "Delete"}
+              {confirmDelete ? 'Tap again to delete' : 'Delete'}
             </button>
           </div>
         </div>

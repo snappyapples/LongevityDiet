@@ -37,8 +37,6 @@ function aggregateDays(meals: Meal[], numDays: number, todayStr?: string): DayDa
       totalCalories,
       totalProtein,
       totalFiber,
-      proteinPerCalorie: totalCalories > 0 ? totalProtein / totalCalories : 0,
-      fiberPerCalorie: totalCalories > 0 ? totalFiber / totalCalories : 0,
     })
   }
 

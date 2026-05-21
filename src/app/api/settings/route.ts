@@ -1,46 +1,18 @@
 import { NextResponse } from 'next/server'
 import { createSupabaseServerClient, getServerUser } from '@/lib/supabase-server'
-import type { ScoringMode } from '@/types'
 
 interface UserSettings {
-  age: number
-  sex: 'male' | 'female'
-  heightFeet: number
-  heightInches: number
   weight: number
-  activityLevel: number
-  calorieGoal: number
-  proteinGoal: number
-  fiberGoal: number
-  scoringMode: ScoringMode
 }
 
 const defaultSettings: UserSettings = {
-  age: 30,
-  sex: 'male',
-  heightFeet: 5,
-  heightInches: 10,
   weight: 180,
-  activityLevel: 1.55,
-  calorieGoal: 2000,
-  proteinGoal: 150,
-  fiberGoal: 30,
-  scoringMode: 'longevity',
 }
 
-// Helper to transform database row to settings
+/* eslint-disable @typescript-eslint/no-explicit-any */
 function dbRowToSettings(row: any): UserSettings {
   return {
-    age: row.age,
-    sex: row.sex,
-    heightFeet: row.height_feet,
-    heightInches: row.height_inches,
-    weight: row.weight,
-    activityLevel: row.activity_level,
-    calorieGoal: row.calorie_goal,
-    proteinGoal: row.protein_goal,
-    fiberGoal: row.fiber_goal,
-    scoringMode: (row.scoring_mode as ScoringMode) ?? 'longevity',
+    weight: typeof row?.weight === 'number' ? row.weight : defaultSettings.weight,
   }
 }
 
@@ -59,7 +31,7 @@ export async function GET() {
       .single()
 
     if (error) {
-      // If no settings exist, return defaults
+      // If no settings row exists, return defaults
       if (error.code === 'PGRST116') {
         return NextResponse.json(defaultSettings)
       }
@@ -83,24 +55,20 @@ export async function PUT(request: Request) {
     const supabase = await createSupabaseServerClient()
     const settings: UserSettings = await request.json()
 
+    // Only weight is written through the UI. Other columns on the settings
+    // table (age, sex, height_*, activity_level, calorie/protein/fiber goals,
+    // scoring_mode) are legacy from the dropped macros mode — we leave them
+    // alone here. A future migration can drop them.
     const { data, error } = await supabase
       .from('settings')
-      .upsert({
-        user_id: user.id,
-        age: settings.age,
-        sex: settings.sex,
-        height_feet: settings.heightFeet,
-        height_inches: settings.heightInches,
-        weight: settings.weight,
-        activity_level: settings.activityLevel,
-        calorie_goal: settings.calorieGoal,
-        protein_goal: settings.proteinGoal,
-        fiber_goal: settings.fiberGoal,
-        scoring_mode: settings.scoringMode ?? 'longevity',
-        updated_at: new Date().toISOString(),
-      }, {
-        onConflict: 'user_id'
-      })
+      .upsert(
+        {
+          user_id: user.id,
+          weight: settings.weight,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'user_id' },
+      )
       .select()
       .single()
 
@@ -109,9 +77,6 @@ export async function PUT(request: Request) {
     return NextResponse.json(dbRowToSettings(data))
   } catch (error) {
     console.error('Save settings error:', error)
-    return NextResponse.json(
-      { error: 'Failed to save settings' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Failed to save settings' }, { status: 500 })
   }
 }

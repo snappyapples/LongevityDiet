@@ -7,7 +7,6 @@ import { Card } from '@/components/ui/card'
 import type { DayData, LongevityDailyScore, Meal, MealType } from '@/types'
 import { MealRow, EmptyMealSlot } from './MealRow'
 import { LongevityScoreRing } from './LongevityScoreRing'
-import { LongevitySubscoreBar } from './LongevitySubscoreBar'
 
 const SINGLE_MEAL_TYPES: MealType[] = ['breakfast', 'lunch', 'dinner']
 const MULTI_MEAL_TYPES: MealType[] = ['snack', 'indulgence']
@@ -83,16 +82,6 @@ export function LongevityDayCard({
       </button>
 
       <div className="p-4 space-y-4">
-        {/* Subscores */}
-        {score.hasData && (
-          <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-            <LongevitySubscoreBar label="Plants" score={score.subscores.plants} />
-            <LongevitySubscoreBar label="Fat Quality" score={score.subscores.fatQuality} />
-            <LongevitySubscoreBar label="Protein (fish)" score={score.subscores.proteinQuality} />
-            <LongevitySubscoreBar label="Harm Reduction" score={score.subscores.harmReduction} />
-          </div>
-        )}
-
         {/* Meal rows */}
         <div className="space-y-2">
           {SINGLE_MEAL_TYPES.map((type) => {
