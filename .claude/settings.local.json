@@ -2,7 +2,6 @@
   "permissions": {
     "allow": [
       "Bash(dir /a \"C:\\Users\\justi\\OneDrive\\Documents\\aiCoding\\FitnessLove\")",
-      "Bash(powershell:*)",
       "Bash(npx create-next-app@latest . --typescript --tailwind --eslint --app --src-dir --use-npm --no-turbopack --import-alias \"@/*\")",
       "Bash(npm install:*)",
       "Bash(npx shadcn@latest init:*)",
@@ -10,7 +9,6 @@
       "Bash(npm run build:*)",
       "Bash(npm run dev:*)",
       "Bash(dir:*)",
-      "Bash(ssh:*)",
       "Bash(git init:*)",
       "Bash(git config:*)",
       "Bash(git remote add:*)",
@@ -20,7 +18,9 @@
       "Bash(git commit:*)",
       "Bash(npx tsc *)",
       "Bash(echo \"exit=$?\")",
-      "Bash(git -c user.email=justin.maner@gmail.com -c 'user.name=Justin Maner' commit -m ' *)"
+      "Bash(git -c user.email=justin.maner@gmail.com -c 'user.name=Justin Maner' commit -m ' *)",
+      "Bash(git -C \"/c/Users/justi/Documents/aiPersonal/FitnessLove\" branch --show-current)",
+      "Bash(git -C \"/c/Users/justi/Documents/aiPersonal/FitnessLove\" status --short)"
     ],
     "deny": [],
     "ask": []
