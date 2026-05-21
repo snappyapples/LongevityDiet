@@ -38,7 +38,16 @@ The macros / calorie-protein-fiber view, the mindful-eating layer, and the inlin
 - **Middleware** (`src/middleware.ts`): Runs on every request, syncs auth cookies between client and server.
 - **AuthProvider** (`src/components/auth/AuthProvider.tsx`): Client-side context for user state, provides `signIn(email, password)` method using `signInWithPassword()`.
 - **AuthGuard**: Wraps protected pages, redirects to `/login` if not authenticated.
+- **Public routes** (no `AuthGuard`): `/login`, `/about`. The `/about` page is the public-facing philosophy / marketing page.
 - **User Management**: Users are created manually in Supabase dashboard (Authentication → Users → Add User). No self-registration.
+
+### Public marketing page (`/about`)
+
+`src/app/about/page.tsx` is a static, server-rendered marketing page (no auth, no client state). Sections: hero → "what to eat vs. what not to" framing → 10-component grid (7 positives + 3 negatives, color-coded with point values) → how-it-works (density / rolling window / protein / AI) → link to the 7-day reference plan → science section → references (10 inline footnotes with PubMed links) → final CTA.
+
+The page links to `/weekly-plan.html` — a copy of `docs/weekly-plan.html` placed in `public/` so it serves as a static asset. **Keep them in sync** if you edit the weekly plan: edit `public/weekly-plan.html` (the live one) and copy back to `docs/` for the canonical reference, or treat `docs/weekly-plan.html` as the source of truth and re-copy after edits.
+
+The 10-component data (icon, name, max points, kind=add/avoid, why) is hard-coded in `about/page.tsx` — intentionally not pulled from `longevity-score.ts` because the marketing copy is editorial. If you change scoring weights, update both.
 
 ### Scoring
 
@@ -59,8 +68,9 @@ src/
 │   │   ├── parse-meal/route.ts    # OpenAI meal parsing + classification (gpt-5-nano)
 │   │   ├── coach/route.ts         # Meal-coach chat turn (gpt-5-mini, structured output)
 │   │   └── coach-memory/route.ts  # CRUD for coach_memory (Supabase)
-│   ├── login/page.tsx             # Email/password login page
-│   └── page.tsx                   # Home (header + Dashboard)
+│   ├── about/page.tsx             # Public marketing page (no auth) — philosophy + 10 components + citations
+│   ├── login/page.tsx             # Email/password login page (links to /about)
+│   └── page.tsx                   # Home (header + Dashboard, has About link)
 ├── components/
 │   ├── auth/                      # AuthProvider, AuthGuard
 │   ├── coach/                     # CoachSheet — conversational meal-idea assistant

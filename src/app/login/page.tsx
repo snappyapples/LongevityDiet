@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -88,6 +89,13 @@ export default function LoginPage() {
               {loading ? 'Signing in...' : 'Sign In'}
             </Button>
           </form>
+
+          <div className="mt-6 text-center text-sm text-muted-foreground">
+            New here?{' '}
+            <Link href="/about" className="text-nutrition-green-dark hover:underline font-medium">
+              Learn about the Longevity Diet →
+            </Link>
+          </div>
         </CardContent>
       </Card>
     </div>

@@ -1,0 +1,543 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Weekly Longevity Plan — 220 lb, 0.7 g/lb protein</title>
+<style>
+  :root {
+    --bg: #fafaf8;
+    --card: #ffffff;
+    --ink: #1a1a1a;
+    --muted: #6b6b6b;
+    --line: #e6e6e0;
+    --green: #4CAF50;
+    --green-bg: #e8f5e9;
+    --amber: #e6a609;
+    --amber-bg: #fef6e0;
+    --red: #e53935;
+    --red-bg: #fdecea;
+    --blue: #2f6feb;
+    --blue-bg: #e8efff;
+    --primary: #5b8a3e;
+    --primary-bg: #eef4e5;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.45;
+  }
+  .wrap {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 24px 20px 60px;
+  }
+  header {
+    margin-bottom: 28px;
+  }
+  h1 {
+    font-size: 26px;
+    margin: 0 0 4px;
+    letter-spacing: -0.01em;
+  }
+  .sub {
+    color: var(--muted);
+    font-size: 14px;
+  }
+  h2 {
+    font-size: 18px;
+    letter-spacing: -0.005em;
+    margin: 32px 0 12px;
+    padding-top: 4px;
+  }
+  h3 {
+    font-size: 15px;
+    margin: 18px 0 8px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 600;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 16px 18px;
+    margin-bottom: 14px;
+  }
+  /* Targets grid */
+  .targets {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 10px;
+  }
+  .target {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px 12px;
+  }
+  .target .label {
+    font-size: 12px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+  }
+  .target .value {
+    font-size: 22px;
+    font-weight: 700;
+    margin-top: 4px;
+    font-variant-numeric: tabular-nums;
+  }
+  .target .unit {
+    font-size: 13px;
+    color: var(--muted);
+    font-weight: 400;
+  }
+  .target.featured {
+    background: var(--primary-bg);
+    border-color: var(--primary);
+  }
+  .target.featured .value {
+    color: var(--primary);
+  }
+  /* Meal table */
+  .meal-row {
+    display: grid;
+    grid-template-columns: 110px 1fr 220px;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .meal-row:last-child { border-bottom: none; }
+  .meal-name {
+    font-weight: 600;
+    font-size: 15px;
+  }
+  .meal-meta {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 2px;
+    font-variant-numeric: tabular-nums;
+  }
+  .meal-food {
+    font-size: 14px;
+    line-height: 1.55;
+  }
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .tag {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 10px;
+    white-space: nowrap;
+    letter-spacing: 0.02em;
+  }
+  .tag-v { background: var(--green-bg); color: var(--green); }
+  .tag-f { background: #fff1d6; color: #c86a00; }
+  .tag-l { background: var(--primary-bg); color: var(--primary); }
+  .tag-g { background: #f5ecda; color: #8a6b2b; }
+  .tag-n { background: var(--amber-bg); color: var(--amber); }
+  .tag-hf { background: var(--blue-bg); color: var(--blue); }
+  .tag-fish { background: #dcf1fa; color: #0b6da3; }
+  .tag-p { background: #f0e8fb; color: #6b3fb5; }
+  /* Daily totals */
+  .totals {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(105px, 1fr));
+    gap: 8px;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--line);
+  }
+  .total {
+    background: var(--bg);
+    border-radius: 6px;
+    padding: 8px 10px;
+  }
+  .total .k {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 600;
+  }
+  .total .v {
+    font-size: 15px;
+    font-weight: 700;
+    margin-top: 2px;
+    font-variant-numeric: tabular-nums;
+  }
+  .total .v.ok { color: var(--green); }
+  /* Weekly grid */
+  .week {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px;
+  }
+  .day {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 12px 14px;
+  }
+  .day h4 {
+    margin: 0 0 6px;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+  }
+  .day .dinner {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .day .note {
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .day.fish { background: #f0f8fb; border-color: #cde7f1; }
+  .day.fish h4 { color: #0b6da3; }
+  /* Audit bars */
+  .audit-row {
+    display: grid;
+    grid-template-columns: 140px 1fr 100px;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .audit-row:last-child { border-bottom: none; }
+  .audit-label {
+    font-size: 14px;
+    font-weight: 500;
+  }
+  .audit-label .small {
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 400;
+  }
+  .audit-bar {
+    height: 10px;
+    background: var(--line);
+    border-radius: 5px;
+    overflow: hidden;
+    position: relative;
+  }
+  .audit-fill {
+    height: 100%;
+    background: var(--green);
+    border-radius: 5px;
+  }
+  .audit-fill.over { background: var(--primary); }
+  .audit-fill.zero { background: var(--green); }
+  .audit-score {
+    font-size: 13px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+  }
+  .audit-score .pass { color: var(--green); }
+  /* Notes */
+  .notes {
+    font-size: 14px;
+    color: var(--ink);
+  }
+  .notes li {
+    margin-bottom: 6px;
+  }
+  .callout {
+    background: var(--primary-bg);
+    border-left: 3px solid var(--primary);
+    padding: 12px 14px;
+    border-radius: 4px;
+    font-size: 14px;
+    margin: 12px 0;
+  }
+  @media (max-width: 640px) {
+    .meal-row {
+      grid-template-columns: 1fr;
+    }
+    .meal-name-col {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+    h1 { font-size: 22px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>A Week of Maximum-Score Eating</h1>
+    <p class="sub">220 lb · 0.7 g/lb protein (gentle Attia target) · ~2,550 kcal · hits every AHEI component + weekly fish.</p>
+  </header>
+
+  <section>
+    <h2>Daily Targets</h2>
+    <div class="targets">
+      <div class="target featured"><div class="label">Protein</div><div class="value">154<span class="unit"> g</span></div></div>
+      <div class="target"><div class="label">Vegetables</div><div class="value">7<span class="unit"> svg</span></div></div>
+      <div class="target"><div class="label">Fruit</div><div class="value">3<span class="unit"> svg</span></div></div>
+      <div class="target"><div class="label">Legumes / Soy</div><div class="value">1.5<span class="unit"> svg</span></div></div>
+      <div class="target"><div class="label">Whole grains</div><div class="value">4<span class="unit"> svg</span></div></div>
+      <div class="target"><div class="label">Nuts / Seeds</div><div class="value">1.5<span class="unit"> svg</span></div></div>
+      <div class="target"><div class="label">Healthy fat</div><div class="value">3<span class="unit"> svg</span></div></div>
+      <div class="target"><div class="label">Fatty fish</div><div class="value">2<span class="unit"> svg/week</span></div></div>
+      <div class="target"><div class="label">Sugary drinks</div><div class="value">0</div></div>
+      <div class="target"><div class="label">Red / proc. meat</div><div class="value">0</div></div>
+      <div class="target"><div class="label">UPF</div><div class="value">&lt;10<span class="unit"> % kcal</span></div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Daily Skeleton (template — repeat with dinner variations below)</h2>
+    <div class="card">
+
+      <div class="meal-row">
+        <div>
+          <div class="meal-name">Breakfast</div>
+          <div class="meal-meta">615 kcal · 36 g P</div>
+        </div>
+        <div class="meal-food">
+          ⅔ cup dry steel-cut oats cooked (+ 1 tbsp chia) with ½ cup berries and 1 oz walnuts · 1 cup 0% Greek yogurt on the side
+        </div>
+        <div class="tags">
+          <span class="tag tag-g">2× whole grain</span>
+          <span class="tag tag-f">1× fruit</span>
+          <span class="tag tag-n">1× nut/seed</span>
+          <span class="tag tag-hf">1× healthy fat</span>
+        </div>
+      </div>
+
+      <div class="meal-row">
+        <div>
+          <div class="meal-name">Snack 1</div>
+          <div class="meal-meta">185 kcal · 14 g P</div>
+        </div>
+        <div class="meal-food">
+          ½ cup 2% cottage cheese · 1 medium apple
+        </div>
+        <div class="tags">
+          <span class="tag tag-f">1× fruit</span>
+        </div>
+      </div>
+
+      <div class="meal-row">
+        <div>
+          <div class="meal-name">Lunch</div>
+          <div class="meal-meta">785 kcal · 60 g P</div>
+        </div>
+        <div class="meal-food">
+          5 oz grilled chicken breast over 3 cups mixed greens · ½ cup cherry tomatoes · ½ cup roasted bell peppers · ½ cup chickpeas · ½ cup cooked quinoa · ½ avocado · 1 tbsp EVOO vinaigrette
+        </div>
+        <div class="tags">
+          <span class="tag tag-v">5× veg</span>
+          <span class="tag tag-l">1× legume</span>
+          <span class="tag tag-g">1× whole grain</span>
+          <span class="tag tag-hf">2× healthy fat</span>
+        </div>
+      </div>
+
+      <div class="meal-row">
+        <div>
+          <div class="meal-name">Snack 2</div>
+          <div class="meal-meta">60 kcal · 8 g P</div>
+        </div>
+        <div class="meal-food">
+          ½ cup edamame (lightly salted)
+        </div>
+        <div class="tags">
+          <span class="tag tag-l">0.5× legume</span>
+        </div>
+      </div>
+
+      <div class="meal-row">
+        <div>
+          <div class="meal-name">Dinner <span style="color: var(--muted); font-weight: 400; font-size: 13px;">(varies — see below)</span></div>
+          <div class="meal-meta">~710 kcal · ~48 g P (salmon night shown)</div>
+        </div>
+        <div class="meal-food">
+          4 oz grilled salmon · 1 cup roasted broccoli · 1 cup sautéed spinach w/ garlic · ½ cup cooked farro · ½ cup lentils · 1 tbsp EVOO · 1 oz olives
+        </div>
+        <div class="tags">
+          <span class="tag tag-v">4× veg</span>
+          <span class="tag tag-l">1× legume</span>
+          <span class="tag tag-g">1× whole grain</span>
+          <span class="tag tag-hf">3× healthy fat</span>
+          <span class="tag tag-fish">1× fish</span>
+        </div>
+      </div>
+
+      <div class="meal-row">
+        <div>
+          <div class="meal-name">Snack 3</div>
+          <div class="meal-meta">195 kcal · 14 g P</div>
+        </div>
+        <div class="meal-food">
+          ½ cup 2% cottage cheese · 1 medium banana
+        </div>
+        <div class="tags">
+          <span class="tag tag-f">1× fruit</span>
+        </div>
+      </div>
+
+      <div class="totals">
+        <div class="total"><div class="k">Calories</div><div class="v">~2,550</div></div>
+        <div class="total"><div class="k">Protein</div><div class="v ok">180 g</div></div>
+        <div class="total"><div class="k">Veg</div><div class="v ok">9 / 7</div></div>
+        <div class="total"><div class="k">Fruit</div><div class="v ok">3 / 3</div></div>
+        <div class="total"><div class="k">Legumes</div><div class="v ok">2.5 / 1.5</div></div>
+        <div class="total"><div class="k">Whole grains</div><div class="v ok">4 / 4</div></div>
+        <div class="total"><div class="k">Nut/seed</div><div class="v ok">1.5 / 1.5</div></div>
+        <div class="total"><div class="k">Healthy fat</div><div class="v ok">6 / 3</div></div>
+      </div>
+
+      <div class="callout">
+        <strong>Protein lands at 180 g</strong> — above your 154 g gentle target with a comfortable buffer. If you want to dial closer to 154, drop snack 3's cottage cheese (save 13 g) or go to ½ cup Greek yogurt at breakfast (save 12 g).
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>7-Day Dinner Rotation</h2>
+    <p class="sub">Breakfast, lunch, and snacks stay identical. Dinner anchor swaps so you get 2 fatty-fish servings spread across the week.</p>
+    <div class="week">
+      <div class="day fish">
+        <h4>Mon</h4>
+        <div class="dinner">🐟 Salmon (4 oz)</div>
+        <div class="note">Fish #1 · skeleton as shown</div>
+      </div>
+      <div class="day">
+        <h4>Tue</h4>
+        <div class="dinner">Firm tofu (6 oz) + peanut sauce</div>
+        <div class="note">+1 extra legume/soy serving</div>
+      </div>
+      <div class="day">
+        <h4>Wed</h4>
+        <div class="dinner">Grilled chicken thighs (5 oz)</div>
+        <div class="note">Neutral anchor · fine on plant-heavy days</div>
+      </div>
+      <div class="day fish">
+        <h4>Thu</h4>
+        <div class="dinner">🐟 Sardines (3.5 oz) on sourdough</div>
+        <div class="note">Fish #2 ✓ · counts whole grain too</div>
+      </div>
+      <div class="day">
+        <h4>Fri</h4>
+        <div class="dinner">Tempeh stir-fry (5 oz)</div>
+        <div class="note">+1 extra legume/soy serving</div>
+      </div>
+      <div class="day">
+        <h4>Sat</h4>
+        <div class="dinner">Wild cod (5 oz) + extra olives</div>
+        <div class="note">Lean fish (neutral) · omega-3 via olives + walnut breakfast</div>
+      </div>
+      <div class="day">
+        <h4>Sun</h4>
+        <div class="dinner">Lentil-walnut loaf</div>
+        <div class="note">+1 legume, +1 nut · fully plant-based dinner</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Weekly Audit</h2>
+    <p class="sub">What the plan actually delivers vs. what the score asks for.</p>
+    <div class="card">
+      <!-- Each audit row: label + bar (filled to min(actual, 2×target)) + actual/target -->
+      <div class="audit-row">
+        <div class="audit-label">Protein <span class="small">g/day avg</span></div>
+        <div class="audit-bar"><div class="audit-fill over" style="width: 100%"></div></div>
+        <div class="audit-score"><span class="pass">180 / 154 ✓</span></div>
+      </div>
+      <div class="audit-row">
+        <div class="audit-label">Vegetables <span class="small">svg/week</span></div>
+        <div class="audit-bar"><div class="audit-fill over" style="width: 100%"></div></div>
+        <div class="audit-score"><span class="pass">63 / 49 ✓</span></div>
+      </div>
+      <div class="audit-row">
+        <div class="audit-label">Fruit <span class="small">svg/week</span></div>
+        <div class="audit-bar"><div class="audit-fill" style="width: 100%"></div></div>
+        <div class="audit-score"><span class="pass">21 / 21 ✓</span></div>
+      </div>
+      <div class="audit-row">
+        <div class="audit-label">Legumes / Soy <span class="small">svg/week</span></div>
+        <div class="audit-bar"><div class="audit-fill over" style="width: 100%"></div></div>
+        <div class="audit-score"><span class="pass">19 / 10.5 ✓</span></div>
+      </div>
+      <div class="audit-row">
+        <div class="audit-label">Whole grains <span class="small">svg/week</span></div>
+        <div class="audit-bar"><div class="audit-fill" style="width: 100%"></div></div>
+        <div class="audit-score"><span class="pass">29 / 28 ✓</span></div>
+      </div>
+      <div class="audit-row">
+        <div class="audit-label">Nut / Seed <span class="small">svg/week</span></div>
+        <div class="audit-bar"><div class="audit-fill" style="width: 100%"></div></div>
+        <div class="audit-score"><span class="pass">11.5 / 10.5 ✓</span></div>
+      </div>
+      <div class="audit-row">
+        <div class="audit-label">Healthy fat <span class="small">svg/week</span></div>
+        <div class="audit-bar"><div class="audit-fill over" style="width: 100%"></div></div>
+        <div class="audit-score"><span class="pass">42 / 21 ✓</span></div>
+      </div>
+      <div class="audit-row">
+        <div class="audit-label">Fatty fish <span class="small">svg/week</span></div>
+        <div class="audit-bar"><div class="audit-fill" style="width: 100%"></div></div>
+        <div class="audit-score"><span class="pass">2 / 2 ✓</span></div>
+      </div>
+      <div class="audit-row">
+        <div class="audit-label">Sugary drinks <span class="small">svg/week</span></div>
+        <div class="audit-bar"><div class="audit-fill zero" style="width: 100%"></div></div>
+        <div class="audit-score"><span class="pass">0 ✓</span></div>
+      </div>
+      <div class="audit-row">
+        <div class="audit-label">Red / processed meat <span class="small">svg/week</span></div>
+        <div class="audit-bar"><div class="audit-fill zero" style="width: 100%"></div></div>
+        <div class="audit-score"><span class="pass">0 ✓</span></div>
+      </div>
+      <div class="audit-row">
+        <div class="audit-label">Ultra-processed <span class="small">% kcal</span></div>
+        <div class="audit-bar"><div class="audit-fill zero" style="width: 20%"></div></div>
+        <div class="audit-score"><span class="pass">~2% ✓</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Notes & Swaps</h2>
+    <div class="card notes">
+      <ul>
+        <li><strong>Protein heavy-lifters:</strong> Greek yogurt + cottage cheese do the work without meat. Without one of them you'd drop ~25 g and need to add another chicken/tofu/fish serving.</li>
+        <li><strong>Whey optional:</strong> This plan hits 180 g without a shake. Add one if you want to bump closer to 220 g (1 g/lb Attia target) on workout days.</li>
+        <li><strong>Calories:</strong> 2,550 is a mild deficit for a 220-lb moderately active person. For maintenance add 1 tbsp EVOO + a second fruit serving. For a bigger cut, drop snack 3 to just cottage cheese (no banana).</li>
+        <li><strong>Veg bulk:</strong> You're at 9 servings/day vs target 7 — the plan over-delivers on greens specifically. Can't really overshoot this one.</li>
+        <li><strong>Variety swaps:</strong></li>
+        <ul>
+          <li>Oatmeal → quinoa or farro porridge with berries</li>
+          <li>Cottage cheese → skyr or plain Greek yogurt</li>
+          <li>Walnuts → almonds, pistachios, pumpkin seeds (rotate weekly)</li>
+          <li>Chickpeas → black beans, edamame, white beans</li>
+          <li>Chicken → turkey breast or extra-firm tofu (+1 legume bonus)</li>
+          <li>Avocado → 1 oz olives or an extra drizzle of EVOO</li>
+        </ul>
+        <li><strong>Alcohol:</strong> Not tracked in the score per your preference, but 0-to-2 drinks/week stays consistent with the longevity pattern.</li>
+      </ul>
+    </div>
+  </section>
+
+</div>
+</body>
+</html>

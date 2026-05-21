@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { Dashboard } from '@/components/dashboard/Dashboard'
 import { Logo } from '@/components/Logo'
 import { SettingsSheet } from '@/components/settings/SettingsSheet'
@@ -20,6 +21,15 @@ function HomeContent() {
             <p className="text-xs text-white/80 mt-0.5">The science-backed diet for a longer, healthier life.</p>
           </div>
           <div className="flex items-center gap-2">
+            <Link href="/about">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-white hover:bg-white/20 text-xs"
+              >
+                About
+              </Button>
+            </Link>
             <SettingsSheet />
             <Button
               variant="ghost"
