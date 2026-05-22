@@ -19,7 +19,7 @@ export function Logo({ size = 'md', showText = true, className }: LogoProps) {
 
   return (
     <div className={cn('flex items-center gap-2', className)}>
-      {/* Logo Icon - Heart with leaf/growth element */}
+      {/* Tree-rings mark — concentric circles, centers nudged down-right for an organic look */}
       <svg
         width={icon}
         height={icon}
@@ -27,32 +27,23 @@ export function Logo({ size = 'md', showText = true, className }: LogoProps) {
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
       >
-        {/* Heart shape - nutrition green */}
-        <path
-          d="M24 42C24 42 6 28 6 16C6 10 10.5 6 16 6C19.5 6 22.5 8 24 11C25.5 8 28.5 6 32 6C37.5 6 42 10 42 16C42 28 24 42 24 42Z"
-          fill="url(#heartGradient)"
-        />
-        {/* Leaf/growth element inside heart - lighter green */}
-        <path
-          d="M24 34C24 34 18 26 18 22C18 18 21 16 24 16C27 16 30 18 30 22C30 26 24 34 24 34Z"
-          fill="url(#leafGradient)"
-        />
-        {/* Stem */}
-        <path
-          d="M24 34V38"
-          stroke="#1B5E20"
-          strokeWidth="2"
-          strokeLinecap="round"
-        />
+        {/* Cross-section disc */}
+        <circle cx="24" cy="24" r="22" fill="url(#discGradient)" />
+        {/* Bark / outer rim */}
+        <circle cx="24" cy="24" r="22" fill="none" stroke="#2E7D32" strokeWidth="0.6" strokeOpacity="0.55" />
+        {/* Growth rings */}
+        <circle cx="23" cy="23" r="17.5" fill="none" stroke="#1B5E20" strokeWidth="0.9" strokeOpacity="0.5" />
+        <circle cx="23.4" cy="23.4" r="13" fill="none" stroke="#1B5E20" strokeWidth="1" strokeOpacity="0.65" />
+        <circle cx="23.8" cy="23.8" r="8.5" fill="none" stroke="#1B5E20" strokeWidth="1.1" strokeOpacity="0.78" />
+        <circle cx="24.2" cy="24.2" r="4.5" fill="none" stroke="#1B5E20" strokeWidth="1.2" strokeOpacity="0.9" />
+        {/* Heart of the tree */}
+        <circle cx="24.4" cy="24.4" r="1.5" fill="#1B5E20" />
         <defs>
-          <linearGradient id="heartGradient" x1="6" y1="6" x2="42" y2="42" gradientUnits="userSpaceOnUse">
-            <stop stopColor="#4CAF50" />
-            <stop offset="1" stopColor="#2E7D32" />
-          </linearGradient>
-          <linearGradient id="leafGradient" x1="18" y1="16" x2="30" y2="34" gradientUnits="userSpaceOnUse">
-            <stop stopColor="#E8F5E9" />
-            <stop offset="1" stopColor="#A5D6A7" />
-          </linearGradient>
+          <radialGradient id="discGradient" cx="38%" cy="38%" r="65%">
+            <stop offset="0%" stopColor="#C5E1A5" />
+            <stop offset="60%" stopColor="#81C784" />
+            <stop offset="100%" stopColor="#4CAF50" />
+          </radialGradient>
         </defs>
       </svg>
 

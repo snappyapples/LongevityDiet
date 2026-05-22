@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build --webpack",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "icons": "node scripts/generate-icons.mjs"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.15",

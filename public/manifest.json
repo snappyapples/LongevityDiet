@@ -4,8 +4,8 @@
   "description": "The science-backed diet for a longer, healthier life.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#f43f5e",
+  "background_color": "#C5E1A5",
+  "theme_color": "#2E7D32",
   "orientation": "portrait-primary",
   "icons": [
     {

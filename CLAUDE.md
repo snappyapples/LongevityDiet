@@ -9,7 +9,20 @@ npm run dev      # Start development server
 npm run build    # Production build
 npm run lint     # Run ESLint
 npm run start    # Start production server
+npm run icons    # Regenerate public PNG icons from src/app/icon.svg
 ```
+
+### Icon assets
+
+The master mark lives at `src/app/icon.svg` (Next.js auto-favicon — tree-rings cross-section in nutrition-green). The Logo component (`src/components/Logo.tsx`) renders an inline copy of the same mark.
+
+`npm run icons` regenerates the PNG variants required for iOS + PWA:
+
+- `public/apple-touch-icon.png` (180×180)
+- `public/icons/icon-192x192.png` (PWA "any maskable")
+- `public/icons/icon-512x512.png` (PWA "any maskable", also used for splash)
+
+Maskable PNGs are flattened onto a green-soft (`#C5E1A5`) background so corners are filled — Android adaptive-icon masks may crop them. After editing `src/app/icon.svg` AND the inline copy in `Logo.tsx`, run `npm run icons` and commit the regenerated PNGs together.
 
 ## Architecture Overview
 
