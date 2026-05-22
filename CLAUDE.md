@@ -53,9 +53,12 @@ The 10-component data (icon, name, max points, kind=add/avoid, why) is hard-code
 
 Adapted AHEI-2010 0–100 score, computed as a **pure 7-day rolling window** (not an average of daily scores). 10 components — 6 positive density-normalized per 1,000 kcal (vegetables, fruit, legumes/soy, whole grains, nuts/seeds, healthy fat) + 1 weekly protective (fatty fish) + 3 reverse-scored harm (sugary drinks, red/processed meat, ultra-processed) — sum to 100. Logging any item moves the score by exactly its contribution to the window totals; no daily reset, no empty-day math.
 
-The main card shows the headline rolling score, a daily protein rail, and a ranked list of all 10 components (biggest gap first), each with an add/avoid icon and a concrete food tip. Components within 0.5 pts of max collapse into a "dialed in" footer.
+**Dashboard layout (v3, primary surface is now the per-day card):**
 
-**Daily protein** is a separate rail inside the same card, NOT folded into the 0–100 score. Target = `weight × 0.7 g/lb` (Attia "gentle"). Protein resets each day — different physiology from AHEI. See [docs/LONGEVITY_SCORE.md](docs/LONGEVITY_SCORE.md).
+- Top card (compact): the 7-day rolling score (small ring), delta vs prior week, and a **collapsed-by-default** "What to eat next" section that expands to show the full 10-component ranked list. The headline rolling score lives here but is deliberately less prominent than the per-day breakdown below.
+- Each day card (expanded): 2×2 grid of the **four subscores** (Plants 50 / Fat 10 / Fish 10 / Harm 30) for that day, plus — for today only — the daily protein rail, then meal rows. The per-day subscores serve as a richer "what to eat next" cue than the headline ranked list, because they're scoped to the day in front of you.
+
+**Daily protein** is a separate rail, NOT folded into the 0–100 score. Target = `weight × 0.7 g/lb` (Attia "gentle"). Protein resets each day — different physiology from AHEI. Rendered inside today's expanded day card. See [docs/LONGEVITY_SCORE.md](docs/LONGEVITY_SCORE.md).
 
 ### File Organization
 
@@ -76,11 +79,12 @@ src/
 │   ├── coach/                     # CoachSheet — conversational meal-idea assistant
 │   ├── dashboard/
 │   │   ├── Dashboard.tsx              # Thin wrapper around LongevityDashboard
-│   │   ├── LongevityDashboard.tsx     # Score card + protein rail + ranked tips + day list
-│   │   ├── LongevityDayCard.tsx       # Per-day card (date + score ring + meals)
+│   │   ├── LongevityDashboard.tsx     # Compact 7-day card + collapsible "What to eat next" + day list
+│   │   ├── LongevityDayCard.tsx       # Per-day card; expanded view renders DaySubscores + (today) ProteinRail + meals
 │   │   ├── LongevityScoreRing.tsx     # Reusable 0–100 ring
-│   │   ├── LongevityComponentList.tsx # Ranked 10-component list w/ tips + add/avoid icons + expand
-│   │   ├── ProteinRail.tsx            # Daily protein bar (Attia target)
+│   │   ├── LongevityComponentList.tsx # 10-component ranked list (collapsed by default via defaultOpen prop)
+│   │   ├── DaySubscores.tsx           # 2×2 grid of the 4 subscores (Plants/Fat/Fish/Harm) for a single day
+│   │   ├── ProteinRail.tsx            # Daily protein bar (Attia target) — rendered in today's day card only
 │   │   ├── LongevityHelpSheet.tsx     # In-app "how the score works" explainer
 │   │   ├── MealRow.tsx                # Meal row inside day cards (category chips)
 │   │   └── CategoryChips.tsx          # Shared chip rendering for food categories

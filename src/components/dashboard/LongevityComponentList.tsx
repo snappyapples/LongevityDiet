@@ -11,9 +11,16 @@ const DEFAULT_VISIBLE = 3
 
 interface Props {
   report: LongevityReport
+  /**
+   * Whether the whole "What to eat next" section is expanded by default.
+   * When false (the default), the user sees a collapsed header with a
+   * summary and has to tap to reveal the full list.
+   */
+  defaultOpen?: boolean
 }
 
-export function LongevityComponentList({ report }: Props) {
+export function LongevityComponentList({ report, defaultOpen = false }: Props) {
+  const [sectionOpen, setSectionOpen] = useState(defaultOpen)
   const [expanded, setExpanded] = useState(false)
   const tips = getRankedComponentTips(report)
 
@@ -43,6 +50,31 @@ export function LongevityComponentList({ report }: Props) {
     )
   }
 
+  // Collapsed: just a header with summary + chevron, click to open.
+  if (!sectionOpen) {
+    return (
+      <div className="mt-4 pt-4 border-t">
+        <button
+          onClick={() => setSectionOpen(true)}
+          className="w-full flex items-center justify-between gap-3 text-left py-1 hover:opacity-80 transition-opacity"
+        >
+          <div className="min-w-0">
+            <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+              What to eat next
+            </h3>
+            <p className="text-sm text-foreground mt-0.5">
+              <span className="font-medium">{actionable.length} actionable gap{actionable.length === 1 ? '' : 's'}</span>
+              {dialedIn.length > 0 && (
+                <span className="text-muted-foreground"> · {dialedIn.length} dialed in</span>
+              )}
+            </p>
+          </div>
+          <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
+        </button>
+      </div>
+    )
+  }
+
   const visibleCount = expanded ? actionable.length : Math.min(DEFAULT_VISIBLE, actionable.length)
   const visible = actionable.slice(0, visibleCount)
   const hiddenCount = actionable.length - visibleCount
@@ -50,12 +82,18 @@ export function LongevityComponentList({ report }: Props) {
 
   return (
     <div className="mt-4 pt-4 border-t space-y-3">
-      <div className="flex items-baseline justify-between">
+      <button
+        onClick={() => setSectionOpen(false)}
+        className="w-full flex items-baseline justify-between gap-2 text-left hover:opacity-80 transition-opacity"
+      >
         <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           What to eat next
         </h3>
-        <span className="text-xs text-muted-foreground">Ranked by biggest gap</span>
-      </div>
+        <span className="text-xs text-muted-foreground flex items-center gap-1">
+          Ranked by biggest gap
+          <ChevronUp className="w-4 h-4" />
+        </span>
+      </button>
 
       <div className="space-y-3">
         {visible.map((tip, i) => (

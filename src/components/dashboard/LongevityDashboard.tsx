@@ -10,7 +10,6 @@ import { LongevityScoreRing } from './LongevityScoreRing'
 import { LongevityDayCard } from './LongevityDayCard'
 import { LongevityHelpSheet } from './LongevityHelpSheet'
 import { LongevityComponentList } from './LongevityComponentList'
-import { ProteinRail } from './ProteinRail'
 import { CoachSheet } from '@/components/coach/CoachSheet'
 import { useSettings } from '@/components/settings/SettingsSheet'
 import type { DayData, FoodItem, Meal, MealContext, MealType } from '@/types'
@@ -263,31 +262,28 @@ export function LongevityDashboard() {
         </div>
       )}
 
-      <Card className="mb-4 p-5">
-        <div className="flex items-center gap-5">
+      <Card className="mb-4 p-4">
+        <div className="flex items-center gap-4">
           <LongevityScoreRing
             score={report.rollingScore}
             hasData={report.rollingHasData}
-            size={140}
-            strokeWidth={12}
+            size={88}
+            strokeWidth={8}
           />
-          <div className="flex-1 space-y-2">
+          <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">
-              <div>
+              <div className="min-w-0">
                 <div className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
-                  Longevity Score
+                  7-day longevity score
                 </div>
-                <div className="text-sm text-muted-foreground mt-1">
-                  Rolling 7-day window
+                <div className="mt-1">
+                  <DeltaBadge delta={report.weeklyDelta} />
                 </div>
               </div>
               <LongevityHelpSheet />
             </div>
-            <DeltaBadge delta={report.weeklyDelta} />
           </div>
         </div>
-
-        <ProteinRail meals={allMeals} weightLbs={settings.weight} />
 
         <LongevityComponentList report={report} />
       </Card>
@@ -302,6 +298,8 @@ export function LongevityDashboard() {
               data={day}
               score={dayScore}
               defaultExpanded={isToday(new Date(day.date + 'T00:00:00'))}
+              allMeals={allMeals}
+              weightLbs={settings.weight}
               onLogMeal={handleLogMeal}
               onEditMeal={handleEditMeal}
               onDeleteMeal={handleDeleteMeal}

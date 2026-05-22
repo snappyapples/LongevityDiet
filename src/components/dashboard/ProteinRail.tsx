@@ -16,9 +16,11 @@ interface Props {
 }
 
 /**
- * Compact daily-protein rail rendered inside the main score card. Separate
- * from the 7-day longevity score because protein has different physiology
- * (daily reset, body-weight-based target — see protein-target.ts).
+ * Compact daily-protein rail. Rendered inside today's day card. Separate from
+ * the 7-day longevity score because protein has different physiology (daily
+ * reset, body-weight-based target — see protein-target.ts).
+ *
+ * The outer wrapper is layout-neutral — the parent owns spacing/borders.
  */
 export function ProteinRail({ meals, weightLbs, multiplier = DEFAULT_PROTEIN_MULTIPLIER }: Props) {
   const today = useMemo(() => new Date(), [])
@@ -27,7 +29,7 @@ export function ProteinRail({ meals, weightLbs, multiplier = DEFAULT_PROTEIN_MUL
 
   if (target <= 0) {
     return (
-      <div className="mt-4 pt-4 border-t">
+      <div>
         <p className="text-sm text-muted-foreground">
           Set your weight in Settings to enable the daily protein target.
         </p>
@@ -50,7 +52,7 @@ export function ProteinRail({ meals, weightLbs, multiplier = DEFAULT_PROTEIN_MUL
   const showTip = hour >= 17 && pct < 0.7 && current < target
 
   return (
-    <div className="mt-4 pt-4 border-t">
+    <div>
       <div className="flex items-baseline justify-between mb-1.5">
         <span className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           Today&apos;s protein

@@ -7,6 +7,8 @@ import { Card } from '@/components/ui/card'
 import type { DayData, LongevityDailyScore, Meal, MealType } from '@/types'
 import { MealRow, EmptyMealSlot } from './MealRow'
 import { LongevityScoreRing } from './LongevityScoreRing'
+import { DaySubscores } from './DaySubscores'
+import { ProteinRail } from './ProteinRail'
 
 const SINGLE_MEAL_TYPES: MealType[] = ['breakfast', 'lunch', 'dinner']
 const MULTI_MEAL_TYPES: MealType[] = ['snack', 'indulgence']
@@ -22,6 +24,10 @@ interface Props {
   data: DayData
   score: LongevityDailyScore
   defaultExpanded?: boolean
+  /** All meals (any date). Required for the today-only protein rail. */
+  allMeals: Meal[]
+  /** User weight in lbs — drives the daily protein target. */
+  weightLbs: number
   onLogMeal: (type: MealType, date: string) => void
   onEditMeal: (meal: Meal) => void
   onDeleteMeal: (mealId: string) => void
@@ -31,6 +37,8 @@ export function LongevityDayCard({
   data,
   score,
   defaultExpanded = false,
+  allMeals,
+  weightLbs,
   onLogMeal,
   onEditMeal,
   onDeleteMeal,
@@ -38,6 +46,7 @@ export function LongevityDayCard({
   const [expanded, setExpanded] = useState(defaultExpanded)
   const getMealsByType = (type: MealType) => data.meals.filter((m) => m.type === type)
   const getFirstMealByType = (type: MealType) => data.meals.find((m) => m.type === type)
+  const dayIsToday = isToday(new Date(data.date + 'T00:00:00'))
 
   if (!expanded) {
     return (
@@ -84,6 +93,12 @@ export function LongevityDayCard({
       </button>
 
       <div className="p-4 space-y-4">
+        {/* Per-day subscore breakdown (4 cards: Plants, Fat, Fish, Harm) */}
+        {score.hasData && <DaySubscores score={score} />}
+
+        {/* Today-only daily protein rail */}
+        {dayIsToday && <ProteinRail meals={allMeals} weightLbs={weightLbs} />}
+
         {/* Meal rows */}
         <div className="space-y-2">
           {SINGLE_MEAL_TYPES.map((type) => {
