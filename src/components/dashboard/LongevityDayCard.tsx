@@ -24,8 +24,6 @@ interface Props {
   data: DayData
   score: LongevityDailyScore
   defaultExpanded?: boolean
-  /** All meals (any date). Required for the today-only protein rail. */
-  allMeals: Meal[]
   /** User weight in lbs — drives the daily protein target. */
   weightLbs: number
   onLogMeal: (type: MealType, date: string) => void
@@ -37,7 +35,6 @@ export function LongevityDayCard({
   data,
   score,
   defaultExpanded = false,
-  allMeals,
   weightLbs,
   onLogMeal,
   onEditMeal,
@@ -96,8 +93,12 @@ export function LongevityDayCard({
         {/* Per-day subscore breakdown (4 cards: Plants, Fat, Fish, Harm) */}
         {score.hasData && <DaySubscores score={score} />}
 
-        {/* Today-only daily protein rail */}
-        {dayIsToday && <ProteinRail meals={allMeals} weightLbs={weightLbs} />}
+        {/* Daily protein rail — the 5th score, alongside the 4 longevity subscores */}
+        <ProteinRail
+          current={data.totalProtein}
+          weightLbs={weightLbs}
+          isToday={dayIsToday}
+        />
 
         {/* Meal rows */}
         <div className="space-y-2">

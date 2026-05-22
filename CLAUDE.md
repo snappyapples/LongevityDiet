@@ -56,9 +56,9 @@ Adapted AHEI-2010 0–100 score, computed as a **pure 7-day rolling window** (no
 **Dashboard layout (v3, primary surface is now the per-day card):**
 
 - Top card (compact): the 7-day rolling score (small ring), delta vs prior week, and a **collapsed-by-default** "What to eat next" section that expands to show the full 10-component ranked list. The headline rolling score lives here but is deliberately less prominent than the per-day breakdown below.
-- Each day card (expanded): 2×2 grid of the **four subscores** (Plants 50 / Fat 10 / Fish 10 / Harm 30) for that day, plus — for today only — the daily protein rail, then meal rows. The per-day subscores serve as a richer "what to eat next" cue than the headline ranked list, because they're scoped to the day in front of you.
+- Each day card (expanded): 2×2 grid of the **four subscores** (Plants 50 / Fat 10 / Fish 10 / Harm 30) for that day, plus a daily **protein rail** below it (rendered on every day, not just today), then meal rows. The five things together — four longevity subscores + protein — are the daily target set you can scroll back through and see "where I got to" for any day in the window. The per-day subscores serve as a richer "what to eat next" cue than the headline ranked list, because they're scoped to the day in front of you.
 
-**Daily protein** is a separate rail, NOT folded into the 0–100 score. Target = `weight × 0.7 g/lb` (Attia "gentle"). Protein resets each day — different physiology from AHEI. Rendered inside today's expanded day card. See [docs/LONGEVITY_SCORE.md](docs/LONGEVITY_SCORE.md).
+**Daily protein** is a separate rail, NOT folded into the 0–100 score. Target = `weight × 0.7 g/lb` (Attia "gentle"). Protein resets each day — different physiology from AHEI. The catch-up tip ("behind for today — try Greek yogurt…") only appears for today after 5pm; historical days show just the bar + score. See [docs/LONGEVITY_SCORE.md](docs/LONGEVITY_SCORE.md).
 
 ### File Organization
 
@@ -84,7 +84,7 @@ src/
 │   │   ├── LongevityScoreRing.tsx     # Reusable 0–100 ring
 │   │   ├── LongevityComponentList.tsx # 10-component ranked list (collapsed by default via defaultOpen prop)
 │   │   ├── DaySubscores.tsx           # 2×2 grid of the 4 subscores (Plants/Fat/Fish/Harm) for a single day
-│   │   ├── ProteinRail.tsx            # Daily protein bar (Attia target) — rendered in today's day card only
+│   │   ├── ProteinRail.tsx            # Daily protein bar (Attia target) — rendered in every expanded day card; isToday gates the catch-up tip
 │   │   ├── LongevityHelpSheet.tsx     # In-app "how the score works" explainer
 │   │   ├── MealRow.tsx                # Meal row inside day cards (category chips)
 │   │   └── CategoryChips.tsx          # Shared chip rendering for food categories

@@ -298,7 +298,6 @@ export function LongevityDashboard() {
               data={day}
               score={dayScore}
               defaultExpanded={isToday(new Date(day.date + 'T00:00:00'))}
-              allMeals={allMeals}
               weightLbs={settings.weight}
               onLogMeal={handleLogMeal}
               onEditMeal={handleEditMeal}
