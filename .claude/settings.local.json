@@ -20,7 +20,9 @@
       "Bash(echo \"exit=$?\")",
       "Bash(git -c user.email=justin.maner@gmail.com -c 'user.name=Justin Maner' commit -m ' *)",
       "Bash(git -C \"/c/Users/justi/Documents/aiPersonal/FitnessLove\" branch --show-current)",
-      "Bash(git -C \"/c/Users/justi/Documents/aiPersonal/FitnessLove\" status --short)"
+      "Bash(git -C \"/c/Users/justi/Documents/aiPersonal/FitnessLove\" status --short)",
+      "Bash(git push)",
+      "Bash(git remote set-url:*)"
     ],
     "deny": [],
     "ask": []
