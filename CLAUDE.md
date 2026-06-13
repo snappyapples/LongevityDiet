@@ -26,7 +26,7 @@ Maskable PNGs are flattened onto a green-soft (`#C5E1A5`) background so corners 
 
 ## Architecture Overview
 
-Longevity Diet (project codename / repo: still `FitnessLove` on GitHub & Vercel until those are renamed) is a Next.js 16 nutrition tracking app focused exclusively on a longevity diet score. Users log meals in natural language; OpenAI (`gpt-5-nano`) parses them into individual ingredients with AHEI-2010 longevity categories. The app displays a single 0–100 rolling longevity score, a daily protein rail (Attia-style), a ranked "what to eat next" list, and an AI meal coach with persistent memory.
+Longevity Diet is a Next.js 16 nutrition tracking app focused exclusively on a longevity diet score. Live at [longevity-diet.vercel.app](https://longevity-diet.vercel.app); GitHub repo `snappyapples/LongevityDiet`. (The local working folder is still named `FitnessLove` — cosmetic only, not worth the churn of renaming the cwd.) Users log meals in natural language; OpenAI (`gpt-5-nano`) parses them into individual ingredients with AHEI-2010 longevity categories. The app displays a single 0–100 rolling longevity score, a daily protein rail (Attia-style), a ranked "what to eat next" list, and an AI meal coach with persistent memory.
 
 The macros / calorie-protein-fiber view, the mindful-eating layer, and the inline quick-log input were all removed in the v2 simplification — longevity is now the only mode.
 

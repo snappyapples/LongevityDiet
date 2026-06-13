@@ -22,8 +22,13 @@
 import { createClient } from '@supabase/supabase-js'
 import OpenAI from 'openai'
 import * as dotenv from 'dotenv'
+import { fileURLToPath } from 'node:url'
+import { dirname, resolve } from 'node:path'
 
-dotenv.config({ path: 'C:/Users/justi/Documents/aiPersonal/FitnessLove/.env.local' })
+// Resolve .env.local relative to this script (scripts/ → project root) so the
+// path survives a folder rename. Don't hardcode an absolute project path here.
+const __dirname = dirname(fileURLToPath(import.meta.url))
+dotenv.config({ path: resolve(__dirname, '..', '.env.local') })
 
 const EMAIL = process.env.APP_EMAIL
 const PASSWORD = process.env.APP_PASSWORD

@@ -25,13 +25,13 @@ Safe to re-run: already-classified meals (without a force-terms match) are skipp
 From PowerShell, in the project directory:
 
 ```powershell
-cd C:\Users\justi\Documents\aiPersonal\FitnessLove   # project folder (pre-rename)
+cd C:\Users\justi\Documents\aiPersonal\FitnessLove   # local folder name (repo is snappyapples/LongevityDiet)
 $env:APP_EMAIL = "your-app-login@example.com"
 $env:APP_PASSWORD = "your-password"
 node scripts/backfill-longevity.mjs
 ```
 
-**Dependencies:** Reads `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `OPENAI_API_KEY` from the project's `.env.local`. Make sure the script's `dotenv.config({ path: ... })` line points to the correct `.env.local`.
+**Dependencies:** Reads `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `OPENAI_API_KEY` from the project's `.env.local`. The script resolves `.env.local` relative to its own location (`scripts/` → project root), so it works regardless of where the project folder lives.
 
 ## `FORCE_TERMS` — targeted re-classification
 
