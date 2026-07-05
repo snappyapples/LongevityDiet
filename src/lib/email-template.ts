@@ -28,15 +28,15 @@ function esc(s: string): string {
     .replace(/"/g, '&quot;')
 }
 
-function gainMeta(c: RankedCandidate): string {
+function gainMeta(c: RankedCandidate, showGain: boolean): string {
   const parts: string[] = []
-  if (c.projectedGain > 0) parts.push(`+${c.projectedGain.toFixed(1)} longevity pts`)
+  if (showGain && c.projectedGain > 0) parts.push(`+${c.projectedGain.toFixed(1)} longevity pts`)
   if (c.proteinGain > 0) parts.push(`${c.proteinGain}g protein`)
   return parts.join(' · ')
 }
 
-function candidateCard(c: RankedCandidate): string {
-  const meta = gainMeta(c)
+function candidateCard(c: RankedCandidate, showGain: boolean): string {
+  const meta = gainMeta(c, showGain)
   return `
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 8px;">
       <tr>
@@ -69,9 +69,9 @@ function subBlock(label: string, body: string): string {
     </div>`
 }
 
-function sectionBlock(s: DigestSectionView): string {
-  const fav = s.favorites.map(candidateCard).join('')
-  const rec = s.recent.map(candidateCard).join('')
+function sectionBlock(s: DigestSectionView, showGain: boolean): string {
+  const fav = s.favorites.map((c) => candidateCard(c, showGain)).join('')
+  const rec = s.recent.map((c) => candidateCard(c, showGain)).join('')
   const fresh = s.fresh.map(newCard).join('')
 
   const inner =
@@ -138,7 +138,7 @@ export function renderDigestEmail(view: DigestView): string {
         : `▼ ${Math.abs(view.weeklyDelta).toFixed(1)} vs last week`
   const deltaColor = (view.weeklyDelta ?? 0) >= 0 ? C.greenMid : C.amber
 
-  const sections = view.sections.map(sectionBlock).join('')
+  const sections = view.sections.map((s) => sectionBlock(s, view.showProjectedGain)).join('')
 
   return `<!DOCTYPE html>
 <html lang="en">

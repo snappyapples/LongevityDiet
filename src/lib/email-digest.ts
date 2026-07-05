@@ -50,6 +50,8 @@ export interface DigestView {
   dateLabel: string
   rollingScore: number
   rollingHasData: boolean
+  /** Only show per-meal "+X longevity pts" when the window has real data to rank against. */
+  showProjectedGain: boolean
   weeklyDelta: number | null
   topGaps: DigestGapView[]
   proteinCurrent: number
@@ -303,6 +305,7 @@ export async function buildDigest(
     dateLabel: format(today, 'EEEE, MMMM d'),
     rollingScore: report.rollingScore,
     rollingHasData: report.rollingHasData,
+    showProjectedGain: report.rollingHasData,
     weeklyDelta: report.weeklyDelta,
     topGaps,
     proteinCurrent,
