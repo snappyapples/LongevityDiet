@@ -2,6 +2,12 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Deployment Workflow — Ship Directly to Prod
+
+This is a solo personal project (`snappyapples/LongevityDiet`, personal git identity `justin.maner@gmail.com`). **Standing authorization: commit and push to `master` and let it deploy to production without asking each time.** This overrides the global "never push without explicit approval" and "branch off the default branch first" rules — here, commit straight to `master` and push. Vercel auto-deploys on push; Justin tests on prod ([longevity-diet.vercel.app](https://longevity-diet.vercel.app)) and is fine fixing forward if something breaks.
+
+Guardrails that still apply: run `npm run build` (project pins webpack — dev/build need the `--webpack` flag) or at least `npx tsc --noEmit` before pushing so obvious breakage is caught, and report what was deployed + the Vercel result.
+
 ## Development Commands
 
 ```bash
@@ -132,6 +138,12 @@ Required in `.env.local`:
 Optional (for one-off inspection scripts):
 - `SUPABASE_SERVICE_ROLE_KEY` — used by `scripts/inspect-coach-data.mjs` to read data via RLS bypass. Do not commit. Rotate after use.
 
+For the proactive email digests (see [docs/EMAIL_DIGESTS.md](docs/EMAIL_DIGESTS.md)) — set locally and in Vercel:
+- `SUPABASE_SERVICE_ROLE_KEY` — the `/api/digest` endpoint reads meals/settings/memory without a session
+- `NEXT_PUBLIC_APP_URL` — base URL for links in the email (`https://longevity-diet.vercel.app`)
+- `DIGEST_SECRET` — shared bearer token the Apps Script sender presents to `/api/digest`
+- `DIGEST_USER_EMAIL` (or `DIGEST_USER_ID`) — identifies the single digest recipient
+
 ### Supabase Tables
 
 - `meals`: `id, user_id, type, date, items (jsonb), total_calories, total_protein, total_fiber, context (jsonb), created_at`
@@ -145,5 +157,6 @@ Optional (for one-off inspection scripts):
 
 - [docs/LONGEVITY_SCORE.md](docs/LONGEVITY_SCORE.md) — full longevity scoring model, UI component map, helpers, implementation notes.
 - [docs/MEAL_COACH.md](docs/MEAL_COACH.md) — conversational meal-coach: architecture, system prompt, memory model, `coach_memory` migration.
+- [docs/EMAIL_DIGESTS.md](docs/EMAIL_DIGESTS.md) — proactive daily email digests (Apps Script scheduler + Gmail send, `/api/digest`, favorites/recent/new bucket logic).
 - [docs/BACKFILL.md](docs/BACKFILL.md) — one-off re-classifier script usage, `FORCE_TERMS` targeted re-classification.
 - [docs/weekly-plan.html](docs/weekly-plan.html) — reference HTML modeling a 7-day eating pattern that hits every AHEI target + 154 g protein/day.
