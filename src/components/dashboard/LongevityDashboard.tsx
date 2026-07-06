@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { isToday, format, subDays } from 'date-fns'
-import { TrendingUp, TrendingDown, Minus } from 'lucide-react'
+import { TrendingUp, TrendingDown, Minus, Loader2 } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { FloatingAddButton } from '../FloatingAddButton'
 import { LogMealSheet } from '../logging/LogMealSheet'
@@ -14,6 +14,7 @@ import { CoachSheet } from '@/components/coach/CoachSheet'
 import { useSettings } from '@/components/settings/SettingsSheet'
 import type { DayData, FoodItem, Meal, MealContext, MealType } from '@/types'
 import { buildLongevityReport } from '@/lib/longevity-score'
+import { parseWithCache } from '@/lib/parse-cache'
 import { cn } from '@/lib/utils'
 
 function DeltaBadge({ delta }: { delta: number | null }) {
@@ -77,6 +78,7 @@ export function LongevityDashboard() {
   const [editingMeal, setEditingMeal] = useState<Meal | null>(null)
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [coachOpen, setCoachOpen] = useState(false)
+  const [quickLogCount, setQuickLogCount] = useState(0)
 
   const fetchData = useCallback(async () => {
     try {
@@ -229,6 +231,54 @@ export function LongevityDashboard() {
     }
   }
 
+  // Quick log: parse + save entirely in the background so the sheet can close
+  // immediately. Reuses the optimistic-create path once the parse resolves.
+  const handleQuickSave = (rawText: string, existingItems: FoodItem[], context: MealContext) => {
+    if (!selectedMealType) return
+    const mealType = selectedMealType
+    const mealDate = selectedDate || format(new Date(), 'yyyy-MM-dd')
+    setError(null)
+    setQuickLogCount((c) => c + 1)
+    void (async () => {
+      let tempId: string | null = null
+      try {
+        const parsed = rawText ? await parseWithCache(rawText) : []
+        const allItems = [...existingItems, ...parsed]
+        if (allItems.length === 0) throw new Error('No items parsed')
+
+        tempId = makeTempId()
+        const totals = totalsFromItems(allItems)
+        const optimistic: Meal = {
+          id: tempId,
+          type: mealType,
+          date: mealDate,
+          items: allItems,
+          context,
+          ...totals,
+          createdAt: new Date().toISOString(),
+        }
+        setAllMeals((prev) => [...prev, optimistic])
+
+        const res = await fetch('/api/meals', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: mealType, date: mealDate, items: allItems, context }),
+        })
+        if (!res.ok) throw new Error('Failed to save meal')
+        const data = await res.json()
+        if (data?.meal) {
+          setAllMeals((prev) => prev.map((m) => (m.id === tempId ? (data.meal as Meal) : m)))
+        }
+      } catch (err) {
+        console.error('Quick save failed:', err)
+        if (tempId) setAllMeals((prev) => prev.filter((m) => m.id !== tempId))
+        setError("Couldn't log that meal automatically. Tap + to try again.")
+      } finally {
+        setQuickLogCount((c) => c - 1)
+      }
+    })()
+  }
+
   const handleSheetClose = (open: boolean) => {
     setSheetOpen(open)
     if (!open) {
@@ -250,6 +300,15 @@ export function LongevityDashboard() {
 
   return (
     <>
+      {quickLogCount > 0 && (
+        <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-700 rounded-lg text-sm flex items-center gap-2">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          <span>
+            {quickLogCount === 1 ? 'Logging your meal…' : `Logging ${quickLogCount} meals…`}
+          </span>
+        </div>
+      )}
+
       {error && (
         <div className="mb-4 p-3 bg-red-100 border border-red-200 text-red-700 rounded-lg text-sm flex items-center justify-between">
           <span>{error}</span>
@@ -326,6 +385,7 @@ export function LongevityDashboard() {
         mealType={selectedMealType}
         editingMeal={editingMeal}
         onSave={handleSaveMeal}
+        onQuickSave={handleQuickSave}
       />
 
       <CoachSheet

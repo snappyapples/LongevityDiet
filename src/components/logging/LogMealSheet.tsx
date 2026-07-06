@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Loader2, Sparkles, Trash2, Pencil, Check, X } from 'lucide-react'
+import { Loader2, Sparkles, Trash2, Pencil, Check, X, Zap } from 'lucide-react'
 import {
   Sheet,
   SheetContent,
@@ -141,9 +141,12 @@ interface LogMealSheetProps {
   mealType: MealType | null
   editingMeal: Meal | null
   onSave: (items: FoodItem[], context: MealContext) => Promise<void>
+  // Skip-the-preview path: hand the raw text (plus any already-parsed items) to
+  // the parent, which parses + saves in the background. Fire-and-forget.
+  onQuickSave: (rawText: string, existingItems: FoodItem[], context: MealContext) => void
 }
 
-export function LogMealSheet({ open, onOpenChange, mealType, editingMeal, onSave }: LogMealSheetProps) {
+export function LogMealSheet({ open, onOpenChange, mealType, editingMeal, onSave, onQuickSave }: LogMealSheetProps) {
   const [input, setInput] = useState('')
   const [items, setItems] = useState<FoodItem[]>([])
   const [parsing, setParsing] = useState(false)
@@ -180,6 +183,18 @@ export function LogMealSheet({ open, onOpenChange, mealType, editingMeal, onSave
     } finally {
       setParsing(false)
     }
+  }
+
+  // Skip review: close immediately and let the parent parse + save in the
+  // background. Includes any items already parsed in this sheet.
+  const handleQuickSave = () => {
+    if (!input.trim() && items.length === 0) return
+    const context: MealContext = notes.trim() ? { notes: notes.trim() } : {}
+    onQuickSave(input.trim(), items, context)
+    setItems([])
+    setInput('')
+    setNotes('')
+    onOpenChange(false)
   }
 
   const handleRemoveItem = (id: string) => {
@@ -243,6 +258,18 @@ export function LogMealSheet({ open, onOpenChange, mealType, editingMeal, onSave
               )}
               Parse with AI
             </Button>
+            {!isEditing && (
+              <Button
+                onClick={handleQuickSave}
+                disabled={!input.trim() || parsing || saving}
+                variant="outline"
+                className="w-full"
+                size="sm"
+              >
+                <Zap className="w-4 h-4 mr-2" />
+                Save without reviewing
+              </Button>
+            )}
           </div>
 
           {/* Parsed items */}
