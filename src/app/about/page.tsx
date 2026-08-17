@@ -376,6 +376,14 @@ export default function AboutPage() {
           >
             Print the one-page tracker <ArrowRight className="w-4 h-4" />
           </a>
+          <a
+            href="/weekly-tracker-landscape.html"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 text-base font-semibold text-nutrition-green-dark hover:underline"
+          >
+            Print the eat-more tracker <ArrowRight className="w-4 h-4" />
+          </a>
         </div>
       </section>
 

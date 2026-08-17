@@ -1,0 +1,419 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Weekly Longevity Tracker — eat more (landscape)</title>
+<style>
+  :root {
+    --ink: #1a1a1a;
+    --muted: #6b6b6b;
+    --faint: #9a9a94;
+    --line: #d8d8d0;
+    --line-soft: #ebebe4;
+    --green: #4CAF50;
+    --green-deep: #3d8b40;
+    --primary: #5b8a3e;
+    --primary-bg: #eef4e5;
+    --blue: #2f6feb;
+    --blue-deep: #2357c4;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #f4f4f0;
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---- page: letter landscape ---- */
+  .page {
+    width: 11in;
+    min-height: 8.5in;
+    margin: 16px auto;
+    padding: 0.4in 0.38in 0.3in;
+    background: #fff;
+    box-shadow: 0 2px 14px rgba(0,0,0,0.12);
+  }
+
+  /* ---- header ---- */
+  header { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; }
+  h1 { font-size: 23px; margin: 0; letter-spacing: -0.015em; }
+  .sub { font-size: 12px; color: var(--muted); margin-top: 3px; }
+  .weekof { font-size: 12px; color: var(--muted); white-space: nowrap; }
+  .weekof .rule { display: inline-block; width: 1.9in; border-bottom: 1px solid var(--line); margin-left: 5px; }
+
+  /* ---- grid ---- */
+  table { width: 100%; border-collapse: collapse; margin-top: 14px; table-layout: fixed; }
+  col.label { width: 1.95in; }
+
+  th.day {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 0 0 7px;
+    text-align: center;
+    border-bottom: 1.5px solid var(--line);
+  }
+  th.corner { border-bottom: 1.5px solid var(--line); }
+  th.day .date { display: block; font-size: 9.5px; font-weight: 400; letter-spacing: 0; color: var(--faint); margin-top: 1px; }
+  th.day.wknd { color: var(--primary); }
+
+  td.rowlabel {
+    padding: 0 12px 0 2px;
+    border-bottom: 1px solid var(--line-soft);
+    vertical-align: middle;
+  }
+  .lab { display: flex; align-items: center; gap: 10px; }
+  .lab svg { flex: 0 0 auto; }
+  .lab .txt { line-height: 1.2; }
+  .lab .name { font-size: 14.5px; font-weight: 650; letter-spacing: -0.005em; }
+  .lab .tgt { font-size: 10.5px; color: var(--muted); margin-top: 1px; }
+  .lab .tgt b { color: var(--green-deep); font-weight: 650; }
+
+  td.cell {
+    border-bottom: 1px solid var(--line-soft);
+    border-left: 1px solid var(--line-soft);
+    text-align: center;
+    vertical-align: middle;
+    padding: 7px 5px;
+  }
+  td.cell.wknd { background: #fcfdfa; }
+
+  .bubbles {
+    display: flex; flex-wrap: wrap;
+    justify-content: center; align-items: center;
+    gap: 7px 8px;
+    max-width: 1.02in;
+    margin: 0 auto;
+  }
+  .b {
+    width: 25px; height: 25px; border-radius: 50%;
+    border: 1.6px solid var(--green);
+    background: #fff;
+  }
+  .b.wk { border-style: dashed; border-color: #b4b4ac; }
+
+  /* protein: one small circle per 10 g, 4 across */
+  .lab.protein .name { color: var(--blue-deep); }
+  .lab.protein .tgt b { color: var(--blue-deep); }
+  .lab.protein .write {
+    display: inline-block; min-width: 34px;
+    border-bottom: 1px solid var(--line); margin: 0 2px;
+  }
+  .pdots {
+    display: flex; flex-wrap: wrap;
+    justify-content: center; align-items: center;
+    gap: 5px 5px;
+    max-width: 0.66in;
+    margin: 0 auto;
+  }
+  .p {
+    width: 11px; height: 11px; border-radius: 50%;
+    border: 1.4px solid var(--blue);
+    background: #fff;
+  }
+  .p.half { border-style: dashed; border-color: #9db6ee; }
+
+  /* row heights — sized so all 8 rows + footer land on one landscape sheet */
+  tr.r1 td { height: 0.78in; }   /* vegetables: 5 bubbles, wraps 3+2 */
+  tr.r2 td { height: 0.53in; }
+  tr.r3 td { height: 0.53in; }
+  tr.r4 td { height: 0.53in; }
+  tr.r5 td { height: 0.53in; }
+  tr.r6 td { height: 0.53in; }
+  tr.r7 td { height: 0.53in; border-bottom: none; }
+  tr.rp td { height: 0.78in; }
+  tr.rp td.rowlabel, tr.rp td.cell { border-bottom: none; }
+  tr.rp td.rowlabel, tr.rp td.cell { border-top: 1.5px solid var(--line); }
+
+  /* ---- footer ---- */
+  .footer { margin-top: 11px; padding-top: 9px; border-top: 1.5px solid var(--line); display: flex; gap: 22px; }
+  .footer h2 {
+    font-size: 9.5px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase;
+    color: var(--muted); margin: 0 0 5px;
+  }
+  .footer h2.blue { color: var(--blue-deep); }
+  .servings { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 20px; }
+  .servings div, .how p, .psrc { font-size: 10px; color: #3d3d3d; line-height: 1.38; }
+  .servings b, .how b, .psrc b { font-weight: 650; }
+  .psrc { margin: 0; }
+  .psrc i { color: var(--faint); font-style: normal; }
+  .how p { margin: 0 0 4px; }
+  .how p:last-child { margin-bottom: 0; }
+  .how .dim { color: var(--faint); }
+
+  /* ---- print ---- */
+  @page { size: letter landscape; margin: 0.35in; }
+  @media print {
+    html, body { background: #fff; }
+    .page { width: auto; min-height: 0; margin: 0; padding: 0; box-shadow: none; }
+    .screen-only { display: none; }
+    table { page-break-inside: avoid; }
+    td.cell.wknd { background: transparent; }
+  }
+  .screen-only {
+    max-width: 11in; margin: 0 auto 18px; padding: 0 0.38in;
+    font-size: 12px; color: var(--muted);
+  }
+  .screen-only button {
+    font: inherit; font-weight: 600; color: #fff; background: var(--primary);
+    border: 0; border-radius: 6px; padding: 7px 14px; cursor: pointer;
+  }
+  .screen-only .tip { display: block; margin-top: 6px; font-size: 11px; color: var(--faint); }
+</style>
+</head>
+<body>
+
+<div class="screen-only">
+  <button onclick="window.print()">Print this page</button>
+  &nbsp; Letter <b>landscape</b>, one sheet.
+  <span class="tip">If your print dialog opens in portrait, switch it to landscape — the page CSS asks for landscape but some drivers ignore it.</span>
+</div>
+
+<div class="page">
+
+  <header>
+    <div>
+      <h1>Eat More — Weekly Tracker</h1>
+      <div class="sub">The seven things worth adding, plus protein. Fill a circle each time you eat a serving; a full row is that component maxed out.</div>
+    </div>
+    <div class="weekof">Week of <span class="rule"></span></div>
+  </header>
+
+  <table>
+    <colgroup>
+      <col class="label" />
+      <col /><col /><col /><col /><col /><col /><col />
+    </colgroup>
+
+    <thead>
+      <tr>
+        <th class="corner"></th>
+        <th class="day">Mon<span class="date">_____</span></th>
+        <th class="day">Tue<span class="date">_____</span></th>
+        <th class="day">Wed<span class="date">_____</span></th>
+        <th class="day">Thu<span class="date">_____</span></th>
+        <th class="day">Fri<span class="date">_____</span></th>
+        <th class="day wknd">Sat<span class="date">_____</span></th>
+        <th class="day wknd">Sun<span class="date">_____</span></th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <!-- Vegetables: 5/day, 15 pts -->
+      <tr class="r1">
+        <td class="rowlabel">
+          <div class="lab">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#4CAF50" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 21c0-5.5 3-10 9-11-1 6-4.5 9.5-9 11z"/>
+              <path d="M12 21C12 14 8.5 9.5 3 8c1 6.5 4.5 11 9 13z"/>
+              <path d="M12 21v-8"/>
+            </svg>
+            <div class="txt"><div class="name">Vegetables</div><div class="tgt"><b>5 a day</b> &middot; 15 pts</div></div>
+          </div>
+        </td>
+        <td class="cell"><div class="bubbles"><i class="b"></i><i class="b"></i><i class="b"></i><i class="b"></i><i class="b"></i></div></td>
+        <td class="cell"><div class="bubbles"><i class="b"></i><i class="b"></i><i class="b"></i><i class="b"></i><i class="b"></i></div></td>
+        <td class="cell"><div class="bubbles"><i class="b"></i><i class="b"></i><i class="b"></i><i class="b"></i><i class="b"></i></div></td>
+        <td class="cell"><div class="bubbles"><i class="b"></i><i class="b"></i><i class="b"></i><i class="b"></i><i class="b"></i></div></td>
+        <td class="cell"><div class="bubbles"><i class="b"></i><i class="b"></i><i class="b"></i><i class="b"></i><i class="b"></i></div></td>
+        <td class="cell wknd"><div class="bubbles"><i class="b"></i><i class="b"></i><i class="b"></i><i class="b"></i><i class="b"></i></div></td>
+        <td class="cell wknd"><div class="bubbles"><i class="b"></i><i class="b"></i><i class="b"></i><i class="b"></i><i class="b"></i></div></td>
+      </tr>
+
+      <!-- Whole grains: 3/day, 10 pts -->
+      <tr class="r2">
+        <td class="rowlabel">
+          <div class="lab">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#4CAF50" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22V6"/>
+              <path d="M12 8c0-2.2 1.8-4 4-4 0 2.2-1.8 4-4 4z"/>
+              <path d="M12 8c0-2.2-1.8-4-4-4 0 2.2 1.8 4 4 4z"/>
+              <path d="M12 14c0-2.2 1.8-4 4-4 0 2.2-1.8 4-4 4z"/>
+              <path d="M12 14c0-2.2-1.8-4-4-4 0 2.2 1.8 4 4 4z"/>
+              <path d="M12 20c0-2.2 1.8-4 4-4 0 2.2-1.8 4-4 4z"/>
+              <path d="M12 20c0-2.2-1.8-4-4-4 0 2.2 1.8 4 4 4z"/>
+            </svg>
+            <div class="txt"><div class="name">Whole grains</div><div class="tgt"><b>3 a day</b> &middot; 10 pts</div></div>
+          </div>
+        </td>
+        <td class="cell"><div class="bubbles"><i class="b"></i><i class="b"></i><i class="b"></i></div></td>
+        <td class="cell"><div class="bubbles"><i class="b"></i><i class="b"></i><i class="b"></i></div></td>
+        <td class="cell"><div class="bubbles"><i class="b"></i><i class="b"></i><i class="b"></i></div></td>
+        <td class="cell"><div class="bubbles"><i class="b"></i><i class="b"></i><i class="b"></i></div></td>
+        <td class="cell"><div class="bubbles"><i class="b"></i><i class="b"></i><i class="b"></i></div></td>
+        <td class="cell wknd"><div class="bubbles"><i class="b"></i><i class="b"></i><i class="b"></i></div></td>
+        <td class="cell wknd"><div class="bubbles"><i class="b"></i><i class="b"></i><i class="b"></i></div></td>
+      </tr>
+
+      <!-- Fruit: 2/day, 10 pts -->
+      <tr class="r3">
+        <td class="rowlabel">
+          <div class="lab">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#4CAF50" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 8c3.5 0 6 2.7 6 6.5S15.5 21 12 21s-6-2.7-6-6.5S8.5 8 12 8z"/>
+              <path d="M12 8V4"/>
+              <path d="M12 5c1.6-1.6 3.4-2 4.5-1.8.2 1.1-.2 2.9-1.8 4.5"/>
+            </svg>
+            <div class="txt"><div class="name">Fruit</div><div class="tgt"><b>2 a day</b> &middot; 10 pts</div></div>
+          </div>
+        </td>
+        <td class="cell"><div class="bubbles"><i class="b"></i><i class="b"></i></div></td>
+        <td class="cell"><div class="bubbles"><i class="b"></i><i class="b"></i></div></td>
+        <td class="cell"><div class="bubbles"><i class="b"></i><i class="b"></i></div></td>
+        <td class="cell"><div class="bubbles"><i class="b"></i><i class="b"></i></div></td>
+        <td class="cell"><div class="bubbles"><i class="b"></i><i class="b"></i></div></td>
+        <td class="cell wknd"><div class="bubbles"><i class="b"></i><i class="b"></i></div></td>
+        <td class="cell wknd"><div class="bubbles"><i class="b"></i><i class="b"></i></div></td>
+      </tr>
+
+      <!-- Legumes / soy: 1/day, 10 pts -->
+      <tr class="r4">
+        <td class="rowlabel">
+          <div class="lab">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#4CAF50" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 4c3 0 5 2.2 5 5s-2 5-5 5-5-2.2-5-5 2-5 5-5z"/>
+              <path d="M15 10c3 0 5 2.2 5 5s-2 5-5 5-5-2.2-5-5 2-5 5-5z"/>
+            </svg>
+            <div class="txt"><div class="name">Legumes / soy</div><div class="tgt"><b>1 a day</b> &middot; 10 pts</div></div>
+          </div>
+        </td>
+        <td class="cell"><div class="bubbles"><i class="b"></i></div></td>
+        <td class="cell"><div class="bubbles"><i class="b"></i></div></td>
+        <td class="cell"><div class="bubbles"><i class="b"></i></div></td>
+        <td class="cell"><div class="bubbles"><i class="b"></i></div></td>
+        <td class="cell"><div class="bubbles"><i class="b"></i></div></td>
+        <td class="cell wknd"><div class="bubbles"><i class="b"></i></div></td>
+        <td class="cell wknd"><div class="bubbles"><i class="b"></i></div></td>
+      </tr>
+
+      <!-- Healthy fat: 2/day, 10 pts -->
+      <tr class="r5">
+        <td class="rowlabel">
+          <div class="lab">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#4CAF50" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 3c3.2 4.2 5.5 7.2 5.5 10.2 0 3.2-2.5 5.8-5.5 5.8s-5.5-2.6-5.5-5.8C6.5 10.2 8.8 7.2 12 3z"/>
+              <path d="M12 19v2"/>
+            </svg>
+            <div class="txt"><div class="name">Healthy fat</div><div class="tgt"><b>2 a day</b> &middot; 10 pts</div></div>
+          </div>
+        </td>
+        <td class="cell"><div class="bubbles"><i class="b"></i><i class="b"></i></div></td>
+        <td class="cell"><div class="bubbles"><i class="b"></i><i class="b"></i></div></td>
+        <td class="cell"><div class="bubbles"><i class="b"></i><i class="b"></i></div></td>
+        <td class="cell"><div class="bubbles"><i class="b"></i><i class="b"></i></div></td>
+        <td class="cell"><div class="bubbles"><i class="b"></i><i class="b"></i></div></td>
+        <td class="cell wknd"><div class="bubbles"><i class="b"></i><i class="b"></i></div></td>
+        <td class="cell wknd"><div class="bubbles"><i class="b"></i><i class="b"></i></div></td>
+      </tr>
+
+      <!-- Nuts / seeds: 1/day, 5 pts -->
+      <tr class="r6">
+        <td class="rowlabel">
+          <div class="lab">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#4CAF50" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 3c4 0 7 3.6 7 8s-3 10-7 10-7-5.6-7-10 3-8 7-8z"/>
+              <path d="M12 5v14"/>
+              <path d="M12 11l3.5-3M12 15l3.5-3M12 11L8.5 8M12 15l-3.5-3"/>
+            </svg>
+            <div class="txt"><div class="name">Nuts / seeds</div><div class="tgt"><b>1 a day</b> &middot; 5 pts</div></div>
+          </div>
+        </td>
+        <td class="cell"><div class="bubbles"><i class="b"></i></div></td>
+        <td class="cell"><div class="bubbles"><i class="b"></i></div></td>
+        <td class="cell"><div class="bubbles"><i class="b"></i></div></td>
+        <td class="cell"><div class="bubbles"><i class="b"></i></div></td>
+        <td class="cell"><div class="bubbles"><i class="b"></i></div></td>
+        <td class="cell wknd"><div class="bubbles"><i class="b"></i></div></td>
+        <td class="cell wknd"><div class="bubbles"><i class="b"></i></div></td>
+      </tr>
+
+      <!-- Fatty fish: 2/week, 10 pts -->
+      <tr class="r7">
+        <td class="rowlabel">
+          <div class="lab">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#4CAF50" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 12c2.6-3.6 5.8-5.4 9-5.4s6.4 1.8 9 5.4c-2.6 3.6-5.8 5.4-9 5.4S5.6 15.6 3 12z"/>
+              <path d="M16.5 9.8h.01"/>
+              <path d="M3 12c1.4-1 2.6-2.6 3-4.4M3 12c1.4 1 2.6 2.6 3 4.4"/>
+            </svg>
+            <div class="txt"><div class="name">Fatty fish</div><div class="tgt"><b>2 a week</b> &middot; 10 pts</div></div>
+          </div>
+        </td>
+        <td class="cell"><div class="bubbles"><i class="b wk"></i></div></td>
+        <td class="cell"><div class="bubbles"><i class="b wk"></i></div></td>
+        <td class="cell"><div class="bubbles"><i class="b wk"></i></div></td>
+        <td class="cell"><div class="bubbles"><i class="b wk"></i></div></td>
+        <td class="cell"><div class="bubbles"><i class="b wk"></i></div></td>
+        <td class="cell wknd"><div class="bubbles"><i class="b wk"></i></div></td>
+        <td class="cell wknd"><div class="bubbles"><i class="b wk"></i></div></td>
+      </tr>
+
+      <!-- Protein: one dot per 10 g, separate from the 100 -->
+      <tr class="rp">
+        <td class="rowlabel">
+          <div class="lab protein">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2f6feb" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6.5 8.5v7M17.5 8.5v7"/>
+              <path d="M4 10.5v3M20 10.5v3"/>
+              <path d="M6.5 12h11"/>
+            </svg>
+            <div class="txt">
+              <div class="name">Protein</div>
+              <div class="tgt"><b>1 circle = 10 g</b></div>
+              <div class="tgt">target <span class="write"></span> g/day</div>
+            </div>
+          </div>
+        </td>
+        <td class="cell"><div class="pdots"><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i></div></td>
+        <td class="cell"><div class="pdots"><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i></div></td>
+        <td class="cell"><div class="pdots"><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i></div></td>
+        <td class="cell"><div class="pdots"><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i></div></td>
+        <td class="cell"><div class="pdots"><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i></div></td>
+        <td class="cell wknd"><div class="pdots"><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i></div></td>
+        <td class="cell wknd"><div class="pdots"><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i><i class="p"></i></div></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="footer">
+    <div style="flex:1.5">
+      <h2>One serving =</h2>
+      <div class="servings">
+        <div><b>Vegetables</b> — 1 cup raw / ½ cup cooked (not potatoes)</div>
+        <div><b>Legumes / soy</b> — ½ cup beans or lentils, 4 oz tofu</div>
+        <div><b>Whole grains</b> — ½ cup oats / quinoa / brown rice</div>
+        <div><b>Healthy fat</b> — 1 tbsp olive oil or ½ avocado</div>
+        <div><b>Fruit</b> — 1 medium piece or ½ cup berries (not juice)</div>
+        <div><b>Nuts / seeds</b> — 1 oz, a small handful</div>
+        <div><b>Fatty fish</b> — 3.5 oz salmon, sardines, mackerel</div>
+        <div></div>
+      </div>
+    </div>
+    <div style="flex:0 0 1.75in">
+      <h2 class="blue">10 g of protein =</h2>
+      <p class="psrc">
+        1½ eggs <i>·</i> ⅓ cup Greek yogurt <i>·</i> 1¼ oz chicken <i>·</i> 1½ oz salmon <i>·</i>
+        4 oz tofu <i>·</i> ½ cup lentils <i>·</i> 1 cup milk <i>·</i> ½ scoop whey
+      </p>
+    </div>
+    <div style="flex:0 0 2.45in">
+      <h2>How to use it</h2>
+      <div class="how">
+        <p>The seven green rows are <b>70 of the 100 points</b> — a full grid is a perfect week on the add side.</p>
+        <p><b>Fish:</b> two dashed circles, any two days.</p>
+        <p><b>Protein</b> sits outside the 100. Target = bodyweight &times; 0.7 g (220 lb &rarr; 154 g &asymp; 15 circles). Resets daily — a miss can&rsquo;t be made up later.</p>
+        <p class="dim">The other 30 points come from what you leave out; that side isn&rsquo;t on this sheet on purpose.</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>
