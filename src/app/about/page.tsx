@@ -359,7 +359,7 @@ export default function AboutPage() {
           Not deprivation. Not 90 minutes of meal prep on Sunday. Just real food, eaten on purpose. Here&apos;s a
           full 7-day pattern that hits every target — including the protein rail — built around a 220-pound adult.
         </p>
-        <div className="mt-6">
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:gap-8">
           <a
             href="/weekly-plan.html"
             target="_blank"
@@ -367,6 +367,14 @@ export default function AboutPage() {
             className="inline-flex items-center gap-2 text-base font-semibold text-nutrition-green-dark hover:underline"
           >
             See the 7-day plan <ArrowRight className="w-4 h-4" />
+          </a>
+          <a
+            href="/weekly-tracker.html"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 text-base font-semibold text-nutrition-green-dark hover:underline"
+          >
+            Print the one-page tracker <ArrowRight className="w-4 h-4" />
           </a>
         </div>
       </section>
