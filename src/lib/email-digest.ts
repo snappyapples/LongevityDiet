@@ -3,7 +3,7 @@
  * fully-rendered email for one of the three daily slots. See docs/EMAIL_DIGESTS.md.
  *
  *   slot → fetch data → current gaps/protein → per-section buckets
- *        (favorites + recent are deterministic; "new" is one gpt-5-mini call)
+ *        (favorites + recent are deterministic; "new" is one DIGEST_MODEL call)
  *        → DigestView → email-template → { subject, html }
  *
  * Delivery (Apps Script + Gmail) lives outside this module; here we only produce
@@ -22,6 +22,7 @@ import {
 } from './meal-history'
 import { buildCoachContext, type CoachContextGap } from './coach'
 import { getOpenAI } from './openai'
+import { DIGEST_MODEL } from './models'
 import { renderDigestEmail } from './email-template'
 
 export type DigestSlot = 'morning' | 'midday' | 'evening'
@@ -168,7 +169,7 @@ export type NewIdeasFn = (
   req: NewIdeasRequest,
 ) => Promise<{ primaryNew: NewIdea[]; snackNew: NewIdea[] }>
 
-/** Default "new ideas" generator — one gpt-5-mini structured call per slot. */
+/** Default "new ideas" generator — one DIGEST_MODEL structured call per slot. */
 const defaultGenerateNewIdeas: NewIdeasFn = async (req) => {
   const openai = getOpenAI()
   const userMsg = [
@@ -184,7 +185,7 @@ const defaultGenerateNewIdeas: NewIdeasFn = async (req) => {
   ].join('\n')
 
   const completion = await openai.chat.completions.create({
-    model: 'gpt-5-mini',
+    model: DIGEST_MODEL,
     messages: [
       { role: 'system', content: DIGEST_NEW_PROMPT },
       { role: 'user', content: userMsg },

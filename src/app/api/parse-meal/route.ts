@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getOpenAI, PARSE_MEAL_PROMPT } from '@/lib/openai'
+import { PARSE_MEAL_MODEL } from '@/lib/models'
 import { FoodItem, FoodCategory } from '@/types'
 import { randomUUID } from 'crypto'
 
@@ -95,7 +96,7 @@ export async function POST(request: NextRequest) {
 
     const openai = getOpenAI()
     const completion = await openai.chat.completions.create({
-      model: 'gpt-5-nano',
+      model: PARSE_MEAL_MODEL,
       messages: [
         {
           role: 'user',

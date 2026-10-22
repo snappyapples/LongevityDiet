@@ -86,7 +86,7 @@ Re-running the same command will retry any meal that still needs classification.
 
 ## Cost estimation
 
-Each meal costs roughly one gpt-5-mini chat completion. Costs are low — a full 120-meal re-backfill is a few cents.
+Each meal costs roughly one `gpt-5.6-luna` chat completion (`PARSE_MEAL_MODEL`). Costs are low — a full 120-meal re-backfill is a few cents.
 
 ## Credentials security
 

@@ -19,7 +19,7 @@ Speed-dial FAB → "Ask coach"
       ↓
 CoachSheet (chat UI, ephemeral message thread)
       ↓ POST /api/coach  { messages, context }
-OpenAI gpt-5-mini → structured { reply, suggestedMemories[] }
+OpenAI COACH_MODEL (gpt-5.6-terra) → structured { reply, suggestedMemories[] }
       ↓
 reply rendered in thread; suggestedMemories rendered as
 "+ Remember: ..." confirm chips
@@ -31,7 +31,7 @@ coach_memory table (Supabase, RLS per user)
 
 | File | Role |
 |---|---|
-| [src/app/api/coach/route.ts](../src/app/api/coach/route.ts) | Chat turn. Builds the context block, calls gpt-5-mini with structured output, returns `CoachResponse`. |
+| [src/app/api/coach/route.ts](../src/app/api/coach/route.ts) | Chat turn. Builds the context block, calls `COACH_MODEL` with structured output, returns `CoachResponse`. |
 | [src/app/api/coach-memory/route.ts](../src/app/api/coach-memory/route.ts) | CRUD for `coach_memory` — GET (list), POST (add a fact), DELETE (`?id=`). |
 | [src/lib/coach.ts](../src/lib/coach.ts) | `COACH_SYSTEM_PROMPT` + `buildCoachContext(report, proteinCurrent, proteinTarget, mealType, memories)` — the structured context string sent each turn. |
 | [src/components/coach/CoachSheet.tsx](../src/components/coach/CoachSheet.tsx) | The chat sheet: message thread, input, memory-confirm chips, "manage memory" view. |
@@ -40,7 +40,7 @@ coach_memory table (Supabase, RLS per user)
 
 ## Model choice
 
-`gpt-5-mini` — meal ideation is a creative/reasoning task, not structured extraction, so `gpt-5-nano` (used by the meal parser) is the wrong tool. OpenAI applies automatic prompt caching to the stable system-prompt + memory block. If latency or quality becomes an issue, benchmark `gpt-5` vs `gpt-5-mini` before swapping (see the project's model-selection policy).
+`gpt-5.6-terra` (`COACH_MODEL` in `src/lib/models.ts`, env-overridable). Picked by `scripts/bench-models.mjs coach` in Oct 2026 when gpt-5-mini's snapshot retired: 3.2s avg and 6/6 on the preference checks vs gpt-5-mini at 21s and 5/6 (it suggested tofu to a user who dislikes it). Terra costs more per token but emits ~10x fewer tokens, so a turn is slightly cheaper. OpenAI applies automatic prompt caching to the stable system-prompt + memory block. Re-run the bench before swapping.
 
 ## Memory model
 

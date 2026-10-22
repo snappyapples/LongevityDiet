@@ -32,7 +32,7 @@ Maskable PNGs are flattened onto a green-soft (`#C5E1A5`) background so corners 
 
 ## Architecture Overview
 
-Longevity Diet is a Next.js 16 nutrition tracking app focused exclusively on a longevity diet score. Live at [longevity-diet.vercel.app](https://longevity-diet.vercel.app); GitHub repo `snappyapples/LongevityDiet`. (The local working folder is still named `FitnessLove` — cosmetic only, not worth the churn of renaming the cwd.) Users log meals in natural language; OpenAI (`gpt-5-nano`) parses them into individual ingredients with AHEI-2010 longevity categories. The app displays a single 0–100 rolling longevity score, a daily protein rail (Attia-style), a ranked "what to eat next" list, and an AI meal coach with persistent memory.
+Longevity Diet is a Next.js 16 nutrition tracking app focused exclusively on a longevity diet score. Live at [longevity-diet.vercel.app](https://longevity-diet.vercel.app); GitHub repo `snappyapples/LongevityDiet`. (The local working folder is still named `FitnessLove` — cosmetic only, not worth the churn of renaming the cwd.) Users log meals in natural language; OpenAI (`gpt-5.6-luna`) parses them into individual ingredients with AHEI-2010 longevity categories. The app displays a single 0–100 rolling longevity score, a daily protein rail (Attia-style), a ranked "what to eat next" list, and an AI meal coach with persistent memory.
 
 The macros / calorie-protein-fiber view, the mindful-eating layer, and the inline quick-log input were all removed in the v2 simplification — longevity is now the only mode.
 
@@ -41,7 +41,7 @@ The macros / calorie-protein-fiber view, the mindful-eating layer, and the inlin
 - React 19
 - Tailwind CSS 4
 - Supabase (database + auth)
-- OpenAI API — `gpt-5-nano` for meal parsing (cheap, structured output), `gpt-5-mini` for the meal coach (reasoning)
+- OpenAI API — `gpt-5.6-luna` for meal parsing and digest ideas, `gpt-5.6-terra` for the meal coach. One constant per task in `src/lib/models.ts` (env-overridable); benchmark with `scripts/bench-models.mjs` before changing
 - shadcn/ui components
 
 ### Key Data Flow
@@ -49,7 +49,7 @@ The macros / calorie-protein-fiber view, the mindful-eating layer, and the inlin
 1. **Meal Logging**: Floating `+` button (speed-dial) → pick a meal type → `LogMealSheet` opens → user types meal description → `POST /api/parse-meal` parses + classifies items → user reviews/edits → `POST /api/meals` writes to Supabase. The save is **optimistic**: the meal lands in local state instantly, the network round-trip happens in the background, and the local entry is reconciled with the server-returned row.
 2. **Authentication**: Email + password via Supabase Auth → `AuthProvider` manages session → redirects to `/` on success.
 3. **Data Fetching**: `GET /api/meals?days=14` → client computes `LongevityReport` via `buildLongevityReport()` (14 days = current 7-day window + prior 7-day window for the delta).
-4. **Meal Coach**: The speed-dial FAB has an "Ask coach" entry that opens `CoachSheet` — a conversational assistant (`gpt-5-mini`) that suggests meals to close the user's current nutrient + protein gaps and has **persistent memory** of preferences. `POST /api/coach` takes the conversation + a live context block (gaps, protein, meal type, memories); `/api/coach-memory` is CRUD for the `coach_memory` Supabase table. AI-proposed memories require one-tap user confirmation before they're saved. See [docs/MEAL_COACH.md](docs/MEAL_COACH.md).
+4. **Meal Coach**: The speed-dial FAB has an "Ask coach" entry that opens `CoachSheet` — a conversational assistant (`gpt-5.6-terra`) that suggests meals to close the user's current nutrient + protein gaps and has **persistent memory** of preferences. `POST /api/coach` takes the conversation + a live context block (gaps, protein, meal type, memories); `/api/coach-memory` is CRUD for the `coach_memory` Supabase table. AI-proposed memories require one-tap user confirmation before they're saved. See [docs/MEAL_COACH.md](docs/MEAL_COACH.md).
 5. **Parse cache**: `src/lib/parse-cache.ts` keeps a `localStorage` LRU of recent parses so re-logging the same description ("oatmeal with berries") skips the OpenAI call entirely.
 
 ### Auth Architecture
@@ -87,8 +87,8 @@ src/
 │   ├── api/
 │   │   ├── meals/route.ts         # CRUD for meals (Supabase, optimistic on the client)
 │   │   ├── settings/route.ts      # User weight (the only field currently surfaced)
-│   │   ├── parse-meal/route.ts    # OpenAI meal parsing + classification (gpt-5-nano)
-│   │   ├── coach/route.ts         # Meal-coach chat turn (gpt-5-mini, structured output)
+│   │   ├── parse-meal/route.ts    # OpenAI meal parsing + classification (PARSE_MEAL_MODEL)
+│   │   ├── coach/route.ts         # Meal-coach chat turn (COACH_MODEL, structured output)
 │   │   └── coach-memory/route.ts  # CRUD for coach_memory (Supabase)
 │   ├── about/page.tsx             # Public marketing page (no auth) — philosophy + 10 components + citations
 │   ├── login/page.tsx             # Email/password login page (links to /about)

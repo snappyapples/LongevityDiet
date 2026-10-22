@@ -96,7 +96,8 @@ async function classifyItems(items) {
   const input = items.map((it, i) => `${i + 1}. ${it.name} (${it.calories} cal${it.quantity ? `, ${it.quantity}` : ''})`).join('\n')
 
   const completion = await openai.chat.completions.create({
-    model: 'gpt-5-mini',
+    // Same model as parse-meal (src/lib/models.ts), which does the same classification.
+    model: process.env.PARSE_MEAL_MODEL || 'gpt-5.6-luna',
     messages: [{ role: 'user', content: CLASSIFY_PROMPT + input }],
   })
 

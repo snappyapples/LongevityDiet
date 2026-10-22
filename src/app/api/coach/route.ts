@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getOpenAI } from '@/lib/openai'
+import { COACH_MODEL } from '@/lib/models'
 import { getServerUser } from '@/lib/supabase-server'
 import { COACH_SYSTEM_PROMPT, buildCoachContext, type CoachContext } from '@/lib/coach'
 import type { CoachMessage, CoachResponse } from '@/types'
@@ -42,7 +43,7 @@ export async function POST(request: NextRequest) {
 
     const openai = getOpenAI()
     const completion = await openai.chat.completions.create({
-      model: 'gpt-5-mini',
+      model: COACH_MODEL,
       messages: [
         {
           role: 'system',

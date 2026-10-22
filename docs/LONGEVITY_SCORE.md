@@ -28,7 +28,7 @@ Positive-food targets are density-normalized per 1,000 kcal, so if you eat fewer
 ```
 User logs meal (natural language)
     ↓
-POST /api/parse-meal → OpenAI gpt-5-mini parses text into FoodItem[]
+POST /api/parse-meal → OpenAI PARSE_MEAL_MODEL (gpt-5.6-luna) parses text into FoodItem[]
     ↓                  (includes name, cal/P/F, categories, servings, processingLevel)
 User confirms + sets hunger/calm
     ↓
@@ -48,7 +48,7 @@ LongevityDashboard renders: 7-day ring, today's score, subscores, day cards, tip
 | [src/types/index.ts](../src/types/index.ts) | `FoodCategory`, `ProcessingLevel`, `ScoringMode`, `LongevityReport`, etc. |
 | [src/lib/longevity-score.ts](../src/lib/longevity-score.ts) | All scoring logic: `scoreWindow` (rolling), `scoreDay` (per-day card), `buildLongevityReport`, `getNextMealTip` |
 | [src/lib/openai.ts](../src/lib/openai.ts) | `PARSE_MEAL_PROMPT` — classifies items on the way in |
-| [src/app/api/parse-meal/route.ts](../src/app/api/parse-meal/route.ts) | Uses gpt-5-mini; passes category/serving/processing fields through |
+| [src/app/api/parse-meal/route.ts](../src/app/api/parse-meal/route.ts) | Uses `PARSE_MEAL_MODEL` (gpt-5.6-luna); passes category/serving/processing fields through |
 | [src/app/api/settings/route.ts](../src/app/api/settings/route.ts) | `scoring_mode` column; defaults to `'longevity'` |
 | [src/components/dashboard/Dashboard.tsx](../src/components/dashboard/Dashboard.tsx) | Routes on `scoringMode` to either `MacrosDashboard` (existing) or `LongevityDashboard` |
 | [src/components/dashboard/LongevityDashboard.tsx](../src/components/dashboard/LongevityDashboard.tsx) | Main longevity view: score card, subscores, tip, day list |
